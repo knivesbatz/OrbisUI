@@ -11,6 +11,7 @@ public static class EmulatorProfiles
     public static void EnsureAll()
     {
         try { EnsureDuckStation(); } catch (Exception ex) { Log.Warn("DuckStation profile: " + ex.Message); }
+        try { EnsurePcsx2QuietOsd(); } catch (Exception ex) { Log.Warn("PCSX2 profile: " + ex.Message); }
     }
 
     static string Backup(string file)
@@ -124,5 +125,37 @@ public static class EmulatorProfiles
             """;
         AtomicFile.WriteAllText(ini, text2);
         Log.Info("DuckStation ROG Ally profile written: " + ini);
+    }
+
+    public static string? Pcsx2Ini()
+    {
+        var exe = Emulators.ExePath("PS2");
+        if (exe != null)
+        {
+            var dir = Path.GetDirectoryName(exe)!;
+            if (File.Exists(Path.Combine(dir, "portable.ini")) || File.Exists(Path.Combine(dir, "portable.txt"))) return Path.Combine(dir, "inis", "PCSX2.ini");
+        }
+        var docs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PCSX2", "inis", "PCSX2.ini");
+        return File.Exists(docs) ? docs : null;
+    }
+
+    /// <summary>
+    /// PCSX2 should run without on-screen messages (OsdMessagesPos = 0 hides them; they still go to PCSX2's log).
+    /// Only that one key is changed, after a backup; every other setting the user tuned is kept.
+    /// </summary>
+    public static void EnsurePcsx2QuietOsd()
+    {
+        var ini = Pcsx2Ini();
+        if (ini == null || !File.Exists(ini)) return;
+        var text = File.ReadAllText(ini);
+        var rx = new System.Text.RegularExpressions.Regex(@"^OsdMessagesPos\s*=\s*(\d+)\s*$", System.Text.RegularExpressions.RegexOptions.Multiline);
+        var m = rx.Match(text);
+        if (m.Success && m.Groups[1].Value == "0") return;
+        Log.Info("PCSX2 config backed up to " + Backup(ini));
+        if (m.Success) text = rx.Replace(text, "OsdMessagesPos = 0", 1);
+        else if (text.Contains("[EmuCore/GS]")) text = text.Replace("[EmuCore/GS]", "[EmuCore/GS]\r\nOsdMessagesPos = 0");
+        else text += "\r\n[EmuCore/GS]\r\nOsdMessagesPos = 0\r\n";
+        AtomicFile.WriteAllText(ini, text);
+        Log.Info("PCSX2 on-screen messages turned off: " + ini);
     }
 }
