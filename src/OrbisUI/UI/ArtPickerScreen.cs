@@ -16,6 +16,9 @@ public sealed class ArtPickerScreen : Screen
     const int Cols = 5;
     const double Tile = 300, Cell = 330, Left = 150, Top = 170;
     readonly Game _game;
+    readonly string _title;
+    readonly Func<string, Task<bool>> _useUrl;
+    readonly Func<string, Task> _useFile;
     readonly Canvas _grid = new();
     readonly Border _focus = UiKit.FocusFrame(3);
     readonly TextBlock _status = UiKit.Label("Loading artwork from SteamGridDB…", 26, UiKit.Dim);
@@ -23,9 +26,30 @@ public sealed class ArtPickerScreen : Screen
     int _sel, _firstRow;
     bool _busy;
 
-    public ArtPickerScreen(Game g)
+    public ArtPickerScreen(Game g) : this(g, LibraryService.DisplayTitle(g),
+        url => Shell.Metadata.ApplyChosenArtAsync(g, url),
+        async f =>
+        {
+            AppSettings.Current.For(g.Id).ArtPath = f; AppSettings.Current.Save(); g.Art = null;
+            await Shell.Metadata.ProcessAsync(g, false, CancellationToken.None);
+            Shell.Library.Save();
+        }) { }
+
+    /// <summary>TV &amp; Video apps: same picker, saved as the app's square tile.</summary>
+    public ArtPickerScreen(AppEntry a) : this(MetadataService.AppGame(a.Name), a.Name,
+        async url => { var file = await Shell.Metadata.AppArtAsync(a.Name, url); if (file != null) SetAppArt(a, file); return file != null; },
+        async f => { var data = await File.ReadAllBytesAsync(f); SetAppArt(a, MetadataService.SaveAppArt(a.Name, data)); }) { }
+
+    static void SetAppArt(AppEntry a, string file) => Shell.Window.Dispatcher.Invoke(() =>
     {
-        _game = g;
+        a.ArtPath = file;
+        AppSettings.Current.Save();
+        Shell.Library.NotifyChanged();
+    });
+
+    ArtPickerScreen(Game g, string title, Func<string, Task<bool>> useUrl, Func<string, Task> useFile)
+    {
+        _game = g; _title = title; _useUrl = useUrl; _useFile = useFile;
         Chrome("Change Artwork", (Btn.Cross, "Use"), (Btn.Circle, "Back"), (Btn.Triangle, "Search Name"), (Btn.Square, "Image File"));
         _status.Margin = new Thickness(Left, 124, 0, 0); _status.VerticalAlignment = VerticalAlignment.Top;
         Children.Add(_status);
@@ -95,7 +119,7 @@ public sealed class ArtPickerScreen : Screen
                 var opt = _opts[_sel];
                 _ = Task.Run(async () =>
                 {
-                    var ok = await Shell.Metadata.ApplyChosenArtAsync(_game, opt.Url);
+                    var ok = await _useUrl(opt.Url);
                     await Dispatcher.InvokeAsync(() =>
                     {
                         _busy = false;
@@ -106,16 +130,14 @@ public sealed class ArtPickerScreen : Screen
                 return true;
             case Btn.Triangle:
                 Play(Sfx.Option);
-                Osk.Ask("Search SteamGridDB", LibraryService.DisplayTitle(_game), v => { if (!string.IsNullOrWhiteSpace(v)) _ = Load(v.Trim()); });
+                Osk.Ask("Search SteamGridDB", _title, v => { if (!string.IsNullOrWhiteSpace(v)) _ = Load(v.Trim()); });
                 return true;
             case Btn.Square:
                 Play(Sfx.Option);
                 FilePicker.Pick("Choose Artwork", new[] { ".png", ".jpg", ".jpeg", ".webp", ".bmp" }, async f =>
                 {
-                    AppSettings.Current.For(_game.Id).ArtPath = f; AppSettings.Current.Save(); _game.Art = null;
-                    await Shell.Metadata.ProcessAsync(_game, false, CancellationToken.None);
-                    Shell.Library.Save();
-                    Shell.Pop();
+                    try { await _useFile(f); Shell.Pop(); }
+                    catch (Exception ex) { _status.Text = "That image couldn't be used: " + ex.Message; }
                 });
                 return true;
             case Btn.Circle: Play(Sfx.Back); Shell.Pop(); return true;

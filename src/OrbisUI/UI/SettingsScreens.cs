@@ -14,7 +14,7 @@ public static class SettingsScreens
     public static Screen Root() => new ListScreen("Settings", new[]
     {
         new ListItem { Glyph = "\uE8F1", Label = "Library", Sub = () => "Scanning, ROM folder, adding games", Activate = () => Shell.Push(Library()) },
-        new ListItem { Glyph = "\uE7F4", Label = "TV & Video", Sub = () => "Add or remove apps and websites", Activate = () => Shell.Push(new FolderScreen(S.Folders[0])) },
+        new ListItem { Glyph = "\uE7F4", Label = "TV & Video", Sub = () => "Add or remove apps and change their art", Activate = () => Shell.Push(new FolderScreen(S.Folders[0])) },
         new ListItem { Glyph = "\uE7FC", Label = "Emulators", Sub = () => "PS1, PS2, PS3, PS4, PSP and PS Vita", Activate = () => Shell.Push(EmulatorsScreen()) },
         new ListItem { Glyph = "\uE7F6", Label = "Sound and Screen", Activate = () => Shell.Push(SoundScreen()) },
         new ListItem { Glyph = "\uE701", Label = "Network and Devices", Sub = () => "Wi-Fi, Bluetooth, audio devices", Activate = () => Shell.Push(DevicesScreen()) },

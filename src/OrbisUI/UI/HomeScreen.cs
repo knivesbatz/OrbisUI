@@ -365,11 +365,7 @@ public sealed class HomeScreen : Screen
             case Btn.Options:
                 var app = f.Apps[_subSel];
                 Play(Sfx.Option);
-                Shell.Push(new ListScreen(app.Name, new[]
-                {
-                    new ListItem { Glyph = "\uE768", Label = "Open", Activate = () => { Shell.Pop(); Shell.Window.StartApp(app); } },
-                    new ListItem { Glyph = "\uE74D", Label = $"Remove from {f.Name}", Activate = () => { Shell.Pop(); f.Apps.Remove(app); AppSettings.Current.Save(); BuildSubRow(); } },
-                }, dialog: true));
+                Shell.Push(FolderScreen.AppOptions(f, app, () => { _subSel = Math.Min(_subSel, f.Apps.Count - 1); BuildSubRow(); }));
                 return true;
         }
         return true;

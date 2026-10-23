@@ -313,22 +313,35 @@ public sealed partial class MetadataService
         return ok;
     }
 
-    /// <summary>Square art for a TV &amp; Video app (Netflix, YouTube...) from SteamGridDB, cached under Cache\Art\Apps.</summary>
-    public async Task<string?> AppArtAsync(string name)
+    /// <summary>Square art for a TV &amp; Video app (Netflix, YouTube...) from SteamGridDB (the first match, or a chosen image url), cached under Cache\Art\Apps.</summary>
+    public async Task<string?> AppArtAsync(string name, string? url = null)
     {
         try
         {
-            var (_, opts) = await SgdbOptionsAsync(new Game { Id = "app:" + name, Title = name }, name);
-            if (opts.Count == 0) return null;
-            var data = await GetBytes(opts[0].Url, CancellationToken.None);
-            if (data == null) return null;
-            var dir = Path.Combine(AppPaths.Art, "Apps");
-            Directory.CreateDirectory(dir);
-            var file = Path.Combine(dir, RomScanner.StableHash(name) + ".jpg");
-            AtomicFile.WriteAllBytes(file, ImageTools.MakeSquare(data));
-            return file;
+            if (url == null)
+            {
+                var (_, opts) = await SgdbOptionsAsync(AppGame(name), name);
+                if (opts.Count == 0) return null;
+                url = opts[0].Url;
+            }
+            var data = await GetBytes(url, CancellationToken.None);
+            return data == null ? null : SaveAppArt(name, data);
         }
         catch (Exception ex) { Log.Warn($"app art {name}: {ex.Message}"); return null; }
+    }
+
+    /// <summary>Stand-in game so app art can use the SteamGridDB search.</summary>
+    public static Game AppGame(string name) => new() { Id = "app:" + name, Title = name };
+
+    public static string SaveAppArt(string name, byte[] data)
+    {
+        var dir = Path.Combine(AppPaths.Art, "Apps");
+        Directory.CreateDirectory(dir);
+        // A new name per save so the tile cache never shows the old picture.
+        var file = Path.Combine(dir, $"{RomScanner.StableHash(name)}-{DateTime.Now:yyyyMMddHHmmss}.jpg");
+        AtomicFile.WriteAllBytes(file, ImageTools.MakeSquare(data));
+        foreach (var old in Directory.GetFiles(dir, RomScanner.StableHash(name) + "*.jpg").Where(x => x != file)) try { File.Delete(old); } catch { }
+        return file;
     }
 
     // ---------------- libretro-thumbnails (thumbnails.libretro.com) ----------------

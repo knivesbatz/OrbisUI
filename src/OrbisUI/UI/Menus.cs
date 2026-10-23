@@ -139,9 +139,18 @@ public sealed class FolderScreen : ListScreen
         {
             var app = f.Apps.FirstOrDefault(a => a.Name == it.Label);
             if (app == null) return;
-            Shell.Confirm("Remove", $"Remove {app.Name} from {f.Name}?", () => { f.Apps.Remove(app); AppSettings.Current.Save(); Shell.Pop(); Shell.Push(new FolderScreen(f)); });
+            Shell.Push(AppOptions(f, app, () => { Shell.Pop(); Shell.Push(new FolderScreen(f)); }));
         };
     }
+
+    /// <summary>Options for a TV &amp; Video app: open, change its art (SteamGridDB or an image file), remove.</summary>
+    public static Screen AppOptions(AppFolder f, AppEntry app, Action removed) => new ListScreen(app.Name, new[]
+    {
+        new ListItem { Glyph = "\uE768", Label = "Open", Activate = () => { Shell.Pop(); Shell.Window.StartApp(app); } },
+        new ListItem { Glyph = "\uEB9F", Label = "Change Artwork", Sub = () => "SteamGridDB or an image file", Activate = () => { Shell.Pop(); Shell.Push(new ArtPickerScreen(app)); } },
+        new ListItem { Glyph = "\uE74D", Label = $"Remove from {f.Name}", Activate = () => Shell.Confirm("Remove", $"Remove {app.Name} from {f.Name}?", () =>
+            { f.Apps.Remove(app); AppSettings.Current.Save(); Shell.Pop(); removed(); }) },
+    }, dialog: true);
 
     /// <summary>Adds an app and fetches square art for it in the background.</summary>
     public static void Add(AppFolder f, AppEntry a)
@@ -174,16 +183,6 @@ public sealed class FolderScreen : ListScreen
                 Add(f, new AppEntry { Name = Path.GetFileNameWithoutExtension(path), Target = path });
                 AppSettings.Current.Save();
                 Shell.Pop(); Shell.Push(new FolderScreen(f));
-            }) };
-        yield return new ListItem { Glyph = "", Label = "Add Website…", Activate = () => Osk.Ask("Website address", "https://", url =>
-            {
-                if (!Uri.TryCreate(url, UriKind.Absolute, out var u) || (u.Scheme != "http" && u.Scheme != "https")) { Shell.Message("Add Website", "That doesn't look like a web address."); return; }
-                Osk.Ask("Name", u.Host, name =>
-                {
-                    Add(f, new AppEntry { Name = string.IsNullOrWhiteSpace(name) ? u.Host : name, Target = u.ToString() });
-                    AppSettings.Current.Save();
-                    Shell.Pop(); Shell.Push(new FolderScreen(f));
-                });
             }) };
     }
 }
