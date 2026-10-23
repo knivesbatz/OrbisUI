@@ -19,7 +19,7 @@ namespace OrbisUI.UI;
 public sealed class HomeScreen : Screen
 {
     // Geometry measured from the reference walkthrough and the user's screenshot (1920x1080).
-    const double FnCell = 104, FnY = 500, BarY = 119, FnShift = 640;
+    const double BarY = 119;
     const double RowY = 232, Small = 202, Big = 346, Gap = 6, FocusX = 269, SmallY = 238, StartH = 81;
 
     readonly Canvas _row = new() { Width = UiKit.W, Height = 700 };
@@ -29,6 +29,7 @@ public sealed class HomeScreen : Screen
     readonly TextBlock _sub = UiKit.Label("", 24, UiKit.Dim);
     readonly TextBlock _desc = new() { FontSize = 22, Foreground = UiKit.Dim, FontFamily = UiKit.Font, TextWrapping = TextWrapping.Wrap, MaxHeight = 92, TextTrimming = TextTrimming.WordEllipsis, Width = 980 };
     readonly Border _startBar = new();
+    readonly StackPanel _titleBlock = new();
     readonly TextBlock _startText = UiKit.Label("Start", 26);
     readonly Border _focus = UiKit.FocusFrame(3);
     readonly Canvas _info = new() { Width = UiKit.W, Height = 200, IsHitTestVisible = false };
@@ -37,7 +38,6 @@ public sealed class HomeScreen : Screen
     readonly TextBlock _user = UiKit.Label("", 24);
     readonly Image _avatar = new() { Width = 40, Height = 40 };
     readonly TextBlock _noticeCount = UiKit.Label("", 18);
-    readonly StackPanel _fnBar = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
     readonly TextBlock _fnLabel = UiKit.Label("", 26);
     readonly Grid _fnLayer = new() { IsHitTestVisible = false };
     readonly Border _fnFocus = UiKit.FocusFrame(2);
@@ -77,7 +77,8 @@ public sealed class HomeScreen : Screen
         _focus.Width = Big + 6; _focus.Height = Big + StartH + 6;
         Canvas.SetLeft(_focus, FocusX - 3); Canvas.SetTop(_focus, RowY - 3);
 
-        var titleBlock = new StackPanel { Margin = new Thickness(FocusX + Big + 19, 0, 0, 0) };
+        var titleBlock = _titleBlock;
+        titleBlock.Margin = new Thickness(FocusX + Big + 19, 0, 0, 0);
         _title.MaxWidth = 1100;
         titleBlock.Children.Add(_title);
         titleBlock.Children.Add(_sub);
@@ -93,8 +94,8 @@ public sealed class HomeScreen : Screen
         {
             new("PlayStation Store", "", () => SteamHandoff(Steam.Links.Store, "Store")),
             new("Notifications", "", () => Shell.Push(new NotificationsScreen())),
-            new("Friends", "", () => SteamHandoff(Steam.Links.Friends, "Friends")),
             new("Messages", "", () => SteamHandoff(Steam.Links.Chat, "Messages")),
+            new("Friends", "", () => SteamHandoff(Steam.Links.Friends, "Friends")),
             new("Profile", "", () => SteamHandoff(Steam.Links.Profile, "Profile")),
             new("Trophies", "", () => SteamHandoff(Steam.Links.Achievements, "Trophies"),
                 Geometry.Parse("M14,4 H42 V14 C42,26 34,32 28,33 C22,32 14,26 14,14 Z M14,8 H6 C6,18 10,22 15,22 M42,8 H50 C50,18 46,22 41,22 M28,33 V42 M18,50 H38 L36,42 H20 Z")),
@@ -137,7 +138,10 @@ public sealed class HomeScreen : Screen
         At(_avatar, 818, 40);
         _user.VerticalAlignment = VerticalAlignment.Center;
         At(_user, 870, 34);
+        At(Icon("messages", "\uE8BD", 36), 650, 36);
         At(Icon("trophies", "\uE734", 36), 1306, 36);
+        At(Icon("settings", "\uE713", 36), 1400, 36);
+        At(Icon("power", "\uE7E8", 36), 1490, 36);
         _info.Children.Add(_statusIcons);
         // Right-aligned so the clock ends at 95% of the width whatever the time is.
         var clockBox = new Border { Width = 300, Child = _clock };
@@ -163,37 +167,19 @@ public sealed class HomeScreen : Screen
         if (_avatar.Source == null) _avatar.Visibility = Visibility.Collapsed;
     }
 
+    // The function icons are the status bar icons themselves: Up only moves a highlight onto them, nothing moves.
+    static readonly (double x, double w)[] FnRects = { (96, 30), (192, 34), (650, 36), (730, 36), (800, 0), (1306, 36), (1400, 36), (1490, 36) };
+
     void BuildFunctionArea()
     {
-        for (int i = 0; i < _fns.Count; i++)
-        {
-            var f = _fns[i];
-            var cell = new Grid { Width = FnCell, Height = 84 };
-            var icon = f.Name == "Profile" ? _avatar.Source : IconPack.Get(FnIcon.GetValueOrDefault(f.Name, ""));
-            if (icon != null)
-                cell.Children.Add(new Image { Source = icon, Width = f.Name == "Profile" ? 40 : 46, Height = f.Name == "Profile" ? 40 : 46, Stretch = Stretch.Uniform });
-            else if (f.Shape != null)
-                cell.Children.Add(new Path { Data = f.Shape, Stroke = UiKit.Text, StrokeThickness = 3, Width = 44, Height = 44, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
-            else
-            {
-                var gl = UiKit.Glyph(f.Glyph, 36);
-                gl.HorizontalAlignment = HorizontalAlignment.Center;
-                cell.Children.Add(gl);
-            }
-            _fnBar.Children.Add(cell);
-        }
-        _fnBar.VerticalAlignment = VerticalAlignment.Top;
-        _fnBar.Margin = new Thickness(0, FnY, 0, 0);
-        _fnBar.Opacity = 0; // shown when Up moves into the function area
-        _fnLayer.Children.Add(_fnBar);
-        _fnFocus.Width = FnCell; _fnFocus.Height = 84; _fnFocus.Visibility = Visibility.Hidden; _fnLabel.Visibility = Visibility.Hidden;
+        _fnFocus.Visibility = Visibility.Hidden; _fnLabel.Visibility = Visibility.Hidden;
         _fnFocus.HorizontalAlignment = HorizontalAlignment.Left; _fnFocus.VerticalAlignment = VerticalAlignment.Top;
         _fnLayer.Children.Add(_fnFocus);
+        _fnLabel.FontSize = 22;
         _fnLabel.HorizontalAlignment = HorizontalAlignment.Left; _fnLabel.VerticalAlignment = VerticalAlignment.Top;
         _fnLayer.Children.Add(_fnLabel);
         Children.Add(_fnLayer);
     }
-
     void UpdateClock()
     {
         _clock.Text = DateTime.Now.ToString("h:mm tt");
@@ -246,9 +232,12 @@ public sealed class HomeScreen : Screen
 
     double TargetX(int i) => i == _sel ? FocusX
         : i < _sel ? FocusX - (_sel - i) * (Small + Gap)
-        : FocusX + (_fnMode ? Small : Big + 3) + Gap + (i - _sel - 1) * (Small + Gap);
+        : FocusX + (AllSmall ? Small : Big + 3) + Gap + (i - _sel - 1) * (Small + Gap);
 
-    void Layout(bool animate)
+    /// <summary>In the function area and inside a folder the home row shows every tile small, like the console.</summary>
+    bool AllSmall => _subSel >= 0;
+
+    void Layout(bool animate, bool details = true)
     {
         // Only tiles near the screen exist, so huge libraries stay cheap.
         int lo = Math.Max(0, _sel - 2), hi = Math.Min(_items.Count - 1, _sel + 8);
@@ -259,7 +248,7 @@ public sealed class HomeScreen : Screen
         }
         for (int i = lo; i <= hi; i++)
         {
-            bool isSel = i == _sel && !_fnMode;
+            bool isSel = i == _sel && !AllSmall;
             double x = TargetX(i), y = isSel ? RowY : SmallY, sc = isSel ? Big / Small : 1;
             if (!_tiles.TryGetValue(i, out var t))
             {
@@ -291,7 +280,7 @@ public sealed class HomeScreen : Screen
             }
         }
         Panel.SetZIndex(_focus, 3);
-        UpdateDetails();
+        if (details) UpdateDetails();
     }
 
     void UpdateDetails()
@@ -323,67 +312,94 @@ public sealed class HomeScreen : Screen
         ApplyBackground();
     }
 
-    // ---- Folder contents row (TV & Video): visible under a focused folder, entered with Down ----
-    const double SubY = 690, SubTile = 255, SubGap = 60;
+    // ---- Folder contents (TV & Video), like the console: a preview row under the focused folder; Down slides the
+    // home row up out of the way and the apps become a 4-column grid that scrolls with the selection.
+    const double SubY = 690, SubTile = 258, SubPitchX = 315, SubPitchY = 369, GridTop = 150, RowLift = SmallY + Small - 66;
+    const int SubCols = 4;
     readonly Canvas _subRow = new();
     readonly Border _subFocus = UiKit.FocusFrame(3);
+    readonly List<FrameworkElement> _subCells = new();
     int _subSel = -1;
+    bool _subWasOpen;
+
+    double SubX(int i) => FocusX + 85 + (i % SubCols) * SubPitchX;
 
     void BuildSubRow()
     {
         if (_subRow.Parent == null) { _row.Children.Add(_subRow); Panel.SetZIndex(_subRow, 4); }
         _subRow.Children.Clear();
+        _subCells.Clear();
         _subSel = -1;
         _focus.Visibility = _fnMode ? Visibility.Hidden : Visibility.Visible;
         if (_items.Count == 0 || _items[_sel].Folder is not AppFolder f) return;
         for (int i = 0; i < f.Apps.Count; i++)
         {
             var a = f.Apps[i];
-            var tile = Tiles.Make(new HomeItem { Kind = HomeKind.App, App = a, Title = a.Name, Glyph = a.Target.Contains("://") ? "\uE774" : "\uE7F4" }, SubTile);
-            var cell = new StackPanel { Width = SubTile };
+            var tile = Tiles.Make(new HomeItem { Kind = HomeKind.App, App = a, Title = a.Name, Glyph = "\uE7F4" }, SubTile);
+            var cell = new StackPanel { Width = SubTile, RenderTransform = new TranslateTransform(SubX(i), SubY) };
             cell.Children.Add(tile);
             var name = UiKit.Label(a.Name, 22);
-            var strip = new Border { Background = UiKit.B("#C0061A55"), Padding = new Thickness(10, 6, 10, 6), Child = name };
-            cell.Children.Add(strip);
-            Canvas.SetLeft(cell, FocusX + i * (SubTile + SubGap));
-            Canvas.SetTop(cell, SubY);
+            name.TextTrimming = TextTrimming.CharacterEllipsis;
+            cell.Children.Add(new Border { Background = UiKit.B("#C0061A55"), Padding = new Thickness(10, 6, 10, 6), Child = name });
+            // Only the first row previews under the folder; the rest appear when the grid opens.
+            cell.Opacity = 0;
+            if (i < SubCols) UiKit.Animate(cell, OpacityProperty, 1, 200);
             _subRow.Children.Add(cell);
-            UiKit.FadeIn(cell, 200);
+            _subCells.Add(cell);
         }
         if (f.Apps.Count == 0)
         {
             var hint = UiKit.Label("Add applications in Settings > TV & Video.", 24, UiKit.Dim);
-            Canvas.SetLeft(hint, FocusX); Canvas.SetTop(hint, SubY);
+            Canvas.SetLeft(hint, SubX(0)); Canvas.SetTop(hint, SubY);
             _subRow.Children.Add(hint);
         }
     }
 
     void PlaceSub()
     {
+        bool open = _subSel >= 0;
+        if (open != _subWasOpen) { _subWasOpen = open; Layout(true, details: false); }
+        // Lift the home row so only its bottom edge shows; the grid lands at GridTop on screen.
+        UiKit.Animate(_rowShift, TranslateTransform.YProperty, open ? -RowLift : 0, 260);
+        foreach (var el in new UIElement[] { _info, _titleBlock, _startBar }) UiKit.Animate(el, OpacityProperty, open ? 0 : 1, 200);
+        _focus.Visibility = open ? Visibility.Hidden : Visibility.Visible;
+        int row = Math.Max(0, _subSel) / SubCols;
+        double scroll = Math.Max(0, row - 1) * SubPitchY;
+        for (int i = 0; i < _subCells.Count; i++)
+        {
+            var t = (TranslateTransform)_subCells[i].RenderTransform;
+            double y = open ? RowLift + GridTop + (i / SubCols) * SubPitchY - scroll : SubY;
+            UiKit.Animate(t, TranslateTransform.XProperty, SubX(i), 260);
+            UiKit.Animate(t, TranslateTransform.YProperty, y, 260);
+            UiKit.Animate(_subCells[i], OpacityProperty, open || i < SubCols ? 1 : 0, 200);
+        }
         _subRow.Children.Remove(_subFocus);
-        if (_subSel < 0) { _focus.Visibility = Visibility.Visible; _startBar.Visibility = Visibility.Visible; return; }
-        _focus.Visibility = Visibility.Hidden;
+        if (!open) return;
         _subFocus.Width = SubTile + 6; _subFocus.Height = SubTile + 46;
-        Canvas.SetLeft(_subFocus, FocusX + _subSel * (SubTile + SubGap) - 3);
-        Canvas.SetTop(_subFocus, SubY - 3);
+        _subFocus.RenderTransform = new TranslateTransform(SubX(_subSel) - 3, RowLift + GridTop + row * SubPitchY - scroll - 3);
         _subRow.Children.Add(_subFocus);
     }
 
     bool SubInput(Btn b)
     {
         var f = _items[_sel].Folder!;
+        int n = _subSel;
         switch (b)
         {
-            case Btn.Left when _subSel > 0: _subSel--; Play(Sfx.Cursor); PlaceSub(); return true;
-            case Btn.Right when _subSel < f.Apps.Count - 1: _subSel++; Play(Sfx.Cursor); PlaceSub(); return true;
+            case Btn.Left when _subSel % SubCols > 0: n--; break;
+            case Btn.Right when _subSel % SubCols < SubCols - 1 && _subSel < f.Apps.Count - 1: n++; break;
+            case Btn.Down when _subSel + SubCols < f.Apps.Count: n += SubCols; break;
+            case Btn.Down when _subSel / SubCols < (f.Apps.Count - 1) / SubCols: n = f.Apps.Count - 1; break;
+            case Btn.Up when _subSel >= SubCols: n -= SubCols; break;
             case Btn.Up or Btn.Circle: _subSel = -1; Play(Sfx.Back); PlaceSub(); return true;
             case Btn.Cross: Shell.Window.StartApp(f.Apps[_subSel]); return true;
             case Btn.Options:
                 var app = f.Apps[_subSel];
                 Play(Sfx.Option);
-                Shell.Push(FolderScreen.AppOptions(f, app, () => { _subSel = Math.Min(_subSel, f.Apps.Count - 1); BuildSubRow(); }));
+                Shell.Push(FolderScreen.AppOptions(f, app, () => { BuildSubRow(); PlaceSub(); }));
                 return true;
         }
+        if (n != _subSel) { _subSel = n; Play(Sfx.Cursor); PlaceSub(); }
         return true;
     }
 
@@ -426,12 +442,8 @@ public sealed class HomeScreen : Screen
         if (_fnMode == on) return;
         _fnMode = on;
         Play(on ? Sfx.Enter : Sfx.Back);
-        // Like the console: the status icons give way to the function row and the content row slides to the bottom, all small.
-        UiKit.Animate(_rowShift, TranslateTransform.YProperty, on ? FnShift : 0, 220);
-        UiKit.Animate(_row, OpacityProperty, on ? 0.7 : 1, 200);
-        UiKit.Animate(_fnBar, OpacityProperty, on ? 1 : 0, 200);
-        UiKit.Animate(_statusIcons, OpacityProperty, on ? 0 : 1, 200);
-        Layout(true);
+        // Up highlights the header icons where they are; the row just dims.
+        UiKit.Animate(_row, OpacityProperty, on ? 0.6 : 1, 200);
         _fnFocus.Visibility = _fnLabel.Visibility = on ? Visibility.Visible : Visibility.Hidden;
         _focus.Visibility = on ? Visibility.Hidden : Visibility.Visible;
         _startBar.Visibility = _focus.Visibility;
@@ -441,15 +453,15 @@ public sealed class HomeScreen : Screen
 
     void PlaceFn()
     {
-        double total = _fns.Count * FnCell;
-        double x0 = (UiKit.W - total) / 2 + _fnSel * FnCell;
-        _fnFocus.Margin = new Thickness(x0, FnY, 0, 0);
+        var (x, w) = FnRects[_fnSel];
+        if (w == 0) { _user.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); w = 18 + 40 + 12 + _user.DesiredSize.Width; }
+        _fnFocus.Width = w + 24; _fnFocus.Height = 60;
+        _fnFocus.Margin = new Thickness(x - 12, BarY - 30, 0, 0);
         _fnLabel.Text = _fns[_fnSel].Name;
         _fnLabel.Width = 400;
         _fnLabel.TextAlignment = TextAlignment.Center;
-        _fnLabel.Margin = new Thickness(x0 + FnCell / 2 - 200, FnY + 88, 0, 0);
+        _fnLabel.Margin = new Thickness(x + w / 2 - 200, BarY + 36, 0, 0);
     }
-
     public override bool OnInput(Btn b)
     {
         if (_fnMode)
