@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using OrbisUI.Input;
 using OrbisUI.Launch;
@@ -64,7 +64,8 @@ public static class Shell
         {
             old.OnHidden();
             old.IsHitTestVisible = false;
-            UiKit.Animate(old, UIElement.OpacityProperty, 0, 600, () => Window.ScreenLayer.Children.Remove(old));
+            Panel.SetZIndex(old, 1); // fade out on top of the new screen so it is revealed underneath
+            UiKit.Animate(old, UIElement.OpacityProperty, 0, 800, () => Window.ScreenLayer.Children.Remove(old));
         }
         Stack.Clear();
         Push(s);
@@ -81,7 +82,7 @@ public static class Shell
 
     public static T? Find<T>() where T : Screen => Stack.OfType<T>().FirstOrDefault();
 
-    public static void Toast(string title, string body = "", string glyph = "") => Services.Notifications.Post(title, body, glyph);
+    public static void Toast(string title, string body = "", string glyph = "î¥†") => Services.Notifications.Post(title, body, glyph);
 
     /// <summary>Yes/No confirmation in the console's dialog style.</summary>
     public static void Confirm(string title, string message, Action yes, string yesText = "Yes", string noText = "No")
@@ -90,8 +91,8 @@ public static class Shell
         ListScreen? dlg = null;
         dlg = new ListScreen(title, new[]
         {
-            new ListItem { Glyph = "", Label = yesText, Activate = () => { Pop(); yes(); } },
-            new ListItem { Glyph = "", Label = noText, Activate = () => Pop() },
+            new ListItem { Glyph = "îœ¾", Label = yesText, Activate = () => { Pop(); yes(); } },
+            new ListItem { Glyph = "îœ‘", Label = noText, Activate = () => Pop() },
         }, dialog: true, subtitle: message, select: 1);
         Push(dlg);
     }
@@ -99,6 +100,6 @@ public static class Shell
     public static void Message(string title, string message)
     {
         Audio.Sound.Play(Audio.Sfx.DialogShow);
-        Push(new ListScreen(title, new[] { new ListItem { Glyph = "", Label = "OK", Activate = () => Pop() } }, dialog: true, subtitle: message));
+        Push(new ListScreen(title, new[] { new ListItem { Glyph = "îœ¾", Label = "OK", Activate = () => Pop() } }, dialog: true, subtitle: message));
     }
 }
