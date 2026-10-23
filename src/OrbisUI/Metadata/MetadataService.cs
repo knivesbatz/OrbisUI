@@ -91,6 +91,10 @@ public sealed partial class MetadataService
             if (g.Art == null || g.Background == null)
                 changed |= await SteamGridDbAsync(g, title, appId, ct) == true;
 
+            // 2a) PlayStation Store: square key art and details for PlayStation games.
+            if (g.Platform != "PC" && (g.Art == null || g.Description == null))
+                changed |= await PsStoreAsync(g, title, ct);
+
             // 2b) libretro-thumbnails: free box art for disc-image names (Redump/No-Intro), no key needed.
             if (g.Art == null && g.Kind == LaunchKind.Emulator)
                 changed |= await LibretroAsync(g, ct);
@@ -194,7 +198,7 @@ public sealed partial class MetadataService
     {
         var c = new HttpRequestMessage(r.Method, r.RequestUri);
         foreach (var h in r.Headers) c.Headers.TryAddWithoutValidation(h.Key, h.Value);
-        if (r.Content is StringContent sc) c.Content = new StringContent(sc.ReadAsStringAsync().Result, Encoding.UTF8, "text/plain");
+        if (r.Content is StringContent sc) c.Content = new StringContent(sc.ReadAsStringAsync().Result, Encoding.UTF8, sc.Headers.ContentType?.MediaType ?? "text/plain");
         return c;
     }
 
@@ -477,6 +481,67 @@ public sealed partial class MetadataService
         _igdbToken = d.RootElement.GetProperty("access_token").GetString();
         _igdbExpiry = DateTime.UtcNow.AddSeconds(d.RootElement.GetProperty("expires_in").GetInt32() - 300);
         return _igdbToken;
+    }
+
+    // ---------------- PlayStation Store (the store website's own search query, no sign-in) ----------------
+    // Same persisted GraphQL query and headers the store.playstation.com web app sends (as used by playnite-metadata-psn-universal).
+    // shortcut: the query hash changes when Sony updates the store app; on failure the other sources still run. Update the hash then.
+    const string PsStoreSearchHash = "4df6284f982e57bec70f23c77e2c219dc792eb19af7fb3d3a81767aa3f1958aa";
+
+    static HttpRequestMessage PsStoreRequest(string url)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36");
+        req.Headers.TryAddWithoutValidation("Origin", "https://store.playstation.com");
+        req.Headers.TryAddWithoutValidation("Referer", "https://store.playstation.com/");
+        req.Headers.TryAddWithoutValidation("apollographql-client-name", "@sie-ppr-web-store/app");
+        req.Headers.TryAddWithoutValidation("apollographql-client-version", "0.113.0");
+        req.Headers.TryAddWithoutValidation("X-PSN-Store-Locale-Override", "en-US");
+        req.Content = new StringContent("", Encoding.UTF8, "application/json"); // the store API answers 400 without a JSON content type, even on GET
+        return req;
+    }
+
+    async Task<bool> PsStoreAsync(Game g, string title, CancellationToken ct)
+    {
+        var clean = Regex.Replace(title, @"\(Disc \d+\)|\((USA|Europe|Japan|En|[A-Z][a-z](,[A-Z][a-z])*)[^)]*\)", "").Trim();
+        var vars = JsonSerializer.Serialize(new { countryCode = "US", languageCode = "en", nextCursor = "", pageOffset = 0, pageSize = 10, searchTerm = clean });
+        var ext = $"{{\"persistedQuery\":{{\"version\":1,\"sha256Hash\":\"{PsStoreSearchHash}\"}}}}";
+        using var d = await GetJson(PsStoreRequest($"https://web.np.playstation.com/api/graphql/v1//op?operationName=getSearchResults&variables={Uri.EscapeDataString(vars)}&extensions={Uri.EscapeDataString(ext)}"), ct);
+        if (d == null || !d.RootElement.TryGetProperty("data", out var data) || !data.TryGetProperty("universalSearch", out var us) || !us.TryGetProperty("results", out var results)) return false;
+        var best = results.EnumerateArray().FirstOrDefault(r => r.TryGetProperty("name", out var n) && TitlesMatch(n.GetString() ?? "", clean));
+        if (best.ValueKind == JsonValueKind.Undefined) return false; // no confident match: leave it to IGDB
+        bool changed = false;
+        if (g.Art == null && best.TryGetProperty("media", out var media))
+        {
+            var url = media.EnumerateArray().Where(m => m.GetProperty("type").GetString() == "IMAGE")
+                .FirstOrDefault(m => m.GetProperty("role").GetString() == "MASTER") is { ValueKind: JsonValueKind.Object } master ? master.GetProperty("url").GetString() : null;
+            if (url != null && await GetBytes(url + "?w=720", ct) is byte[] img) changed |= SaveTile(g, img, "PlayStation Store");
+        }
+        if (g.Description == null && best.TryGetProperty("id", out var idEl) && idEl.GetString() is string id)
+        {
+            try
+            {
+                using var r = await Http.SendAsync(PsStoreRequest("https://store.playstation.com/en-us/product/" + Uri.EscapeDataString(id)), ct);
+                if (r.IsSuccessStatusCode)
+                {
+                    var html = await r.Content.ReadAsStringAsync(ct);
+                    string? Field(string qa) => Regex.Match(html, $"data-qa=\"{Regex.Escape(qa)}\"[^>]*>(.*?)</(p|span|div)>", RegexOptions.Singleline) is { Success: true } m
+                        ? WebUtility.HtmlDecode(Regex.Replace(Regex.Replace(m.Groups[1].Value, @"<br\s*/?>", "\n"), "<[^>]+>", "")).Trim() : null;
+                    var desc = Field("mfe-game-overview#description");
+                    if (!string.IsNullOrWhiteSpace(desc))
+                    {
+                        g.Description = desc;
+                        g.Publisher ??= Field("mfe-game-title#publisher");
+                        g.Year ??= Regex.Match(Field("gameInfo#releaseInformation#releaseDate-value") ?? "", @"\d{4}").Value is { Length: 4 } y ? y : null;
+                        g.Genres ??= Field("gameInfo#releaseInformation#genre-value");
+                        g.MetaSource = "PlayStation Store";
+                        changed = true;
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException) { Log.Warn("PlayStation Store page: " + ex.Message); }
+        }
+        return changed;
     }
 
     async Task<bool> IgdbAsync(Game g, string title, CancellationToken ct)
