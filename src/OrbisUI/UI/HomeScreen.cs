@@ -134,7 +134,6 @@ public sealed class HomeScreen : Screen
         At(_noticeCount, 230, 46);
         At(Icon("friends", "\uE716", 36), 730, 36);
         At(new System.Windows.Shapes.Ellipse { Width = 10, Height = 10, Fill = UiKit.B("#3FA9FF") }, 800, 10);
-        _avatar.Clip = new RectangleGeometry(new Rect(0, 0, 40, 40), 3, 3);
         At(_avatar, 818, 40);
         _user.VerticalAlignment = VerticalAlignment.Center;
         At(_user, 870, 34);

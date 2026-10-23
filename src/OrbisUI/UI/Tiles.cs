@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using OrbisUI.Core;
 using OrbisUI.Library;
 using OrbisUI.Metadata;
@@ -49,6 +50,8 @@ public static class Tiles
 
         if (it.IconKey != null && IconPack.Get(it.IconKey, 384) is ImageSource tileImg)
         {
+            // Some pack icons are rounded squares; fill behind them with their own edge colour so every tile is square.
+            if (tileImg is BitmapSource bs) g.Background = new SolidColorBrush(EdgeColor(bs));
             g.Children.Add(new Image { Source = tileImg, Stretch = Stretch.UniformToFill });
             return g;
         }
@@ -59,6 +62,20 @@ public static class Tiles
         g.Children.Add(glyph);
         g.Children.Add(new Border { BorderBrush = UiKit.B("#55FFFFFF"), BorderThickness = new Thickness(1) });
         return g;
+    }
+
+    /// <summary>Colour just inside the middle of the left edge (past any rounded corner or margin).</summary>
+    static Color EdgeColor(BitmapSource src)
+    {
+        var bgra = new FormatConvertedBitmap(src, PixelFormats.Bgra32, null, 0);
+        int y = bgra.PixelHeight / 2;
+        var px = new byte[4];
+        for (int x = 0; x < bgra.PixelWidth / 4; x++)
+        {
+            bgra.CopyPixels(new Int32Rect(x, y, 1, 1), px, 4, 0);
+            if (px[3] > 240) return Color.FromRgb(px[2], px[1], px[0]);
+        }
+        return Colors.Transparent;
     }
 
     static FrameworkElement Fallback(Grid g, string platform, string title, double size)
