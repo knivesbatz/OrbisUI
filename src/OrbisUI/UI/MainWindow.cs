@@ -62,6 +62,7 @@ public sealed class MainWindow : Window
         Router = new InputRouter(Dispatcher);
         Router.Pressed += OnPressed;
         Notifications.Posted += n => Dispatcher.BeginInvoke(() => EnqueueToast(n));
+        LosslessScaling.Activated += g => Dispatcher.BeginInvoke(() => GameToast.Show("PRO Mode Active", "Frame generation is on for this game.", "\uE945"));
 
         Shell.Window = this;
         Shell.Launcher.Ready += (g, h) => Dispatcher.BeginInvoke(() => OnGameReady(g, h));
@@ -136,6 +137,7 @@ public sealed class MainWindow : Window
                     continue;
                 }
                 if (raw == "quit") { Application.Current.Shutdown(); return; }
+                if (raw == "gametoast") { GameToast.Show("PRO Mode Active", "Frame generation is on for this game.", "\uE945"); continue; }
                 if (Enum.TryParse<Btn>(raw, true, out var b)) Shell.Dispatch(b);
                 await Task.Delay(250);
             }

@@ -72,9 +72,10 @@ public static class Sound
         }
     }
 
-    public static void Play(Sfx s)
+    /// <summary>inBackground plays even while a game is in front (in-game notifications).</summary>
+    public static void Play(Sfx s, bool inBackground = false)
     {
-        if (!_enabled || Muted || _volume <= 0.001) return;
+        if (!_enabled || (Muted && !inBackground) || _volume <= 0.001) return;
         if (!Clips.TryGetValue(s, out var c) || c.Mem == IntPtr.Zero) return;
         long now = Environment.TickCount64;
         // Throttle: the same effect at most every 45 ms so held directions don't stack up.

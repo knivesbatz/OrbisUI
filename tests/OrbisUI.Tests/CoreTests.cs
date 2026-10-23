@@ -125,6 +125,14 @@ public class CoreTests
     }
 
     [Fact]
+    public void Lossless_CoversNeedsMostOfTheGame()
+    {
+        var game = new Native.RECT { Left = 0, Top = 0, Right = 1920, Bottom = 1080 };
+        Assert.True(Services.LosslessScaling.Covers(new Native.RECT { Left = 0, Top = 0, Right = 1920, Bottom = 1080 }, game));
+        Assert.False(Services.LosslessScaling.Covers(new Native.RECT { Left = 0, Top = 0, Right = 800, Bottom = 600 }, game));
+    }
+
+    [Fact]
     public void Display_CurrentModeIsListed()
     {
         var cur = Services.Display.Current();

@@ -76,6 +76,57 @@ public static class LosslessScaling
         Native.SendKeyCombo(Hotkey());
         _activatedFor = g.Id;
         Log.Info($"Lossless Scaling hotkey sent for {g.Title}");
+        // The hotkey can be ignored (wrong hotkey, unsupported window), so only announce PRO mode once scaling is seen.
+        for (int i = 0; i < 20 && stillRunning(); i++)
+        {
+            await Task.Delay(500);
+            if (IsScaling(gameWindow))
+            {
+                Activated?.Invoke(g);
+                return;
+            }
+        }
+        Log.Warn("Lossless Scaling: no scaling window appeared after the hotkey");
+    }
+
+    /// <summary>Raised (on a worker thread) when scaling is confirmed for the game.</summary>
+    public static event Action<Game>? Activated;
+
+    /// <summary>
+    /// While scaling, Lossless Scaling shows its output in its own borderless window covering the game.
+    /// So scaling is on when a visible window of its process (not its settings window) covers most of the game's screen.
+    /// </summary>
+    public static bool IsScaling(IntPtr gameWindow)
+    {
+        if (!Native.GetWindowRect(gameWindow, out var gr)) return false;
+        foreach (var p in Process.GetProcessesByName("LosslessScaling"))
+        {
+            using (p)
+            {
+                var main = p.MainWindowHandle;
+                bool found = false;
+                Native.EnumWindows((h, _) =>
+                {
+                    if (h == main || !Native.IsWindowVisible(h) || Native.IsIconic(h)) return true;
+                    Native.GetWindowThreadProcessId(h, out var pid);
+                    if (pid != (uint)p.Id || !Native.GetWindowRect(h, out var r)) return true;
+                    found = Covers(r, gr);
+                    if (found) Log.Info($"Lossless Scaling window {r.Right - r.Left}x{r.Bottom - r.Top} over game {gr.Right - gr.Left}x{gr.Bottom - gr.Top}");
+                    return !found;
+                }, IntPtr.Zero);
+                if (found) return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>True when r covers at least 90% of the game window's area.</summary>
+    internal static bool Covers(Native.RECT r, Native.RECT game)
+    {
+        long ix = Math.Max(0, Math.Min(r.Right, game.Right) - Math.Max(r.Left, game.Left));
+        long iy = Math.Max(0, Math.Min(r.Bottom, game.Bottom) - Math.Max(r.Top, game.Top));
+        long ga = (long)(game.Right - game.Left) * (game.Bottom - game.Top);
+        return ga > 0 && ix * iy >= ga * 0.9;
     }
 
     public static void Reset() => _activatedFor = null;
