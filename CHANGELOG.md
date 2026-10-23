@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3 (2026-10-23)
+- Internet Browser on the home row (controller: D-pad between links, Cross select, Triangle address or Google search, Circle back). Controller Fixer searches open in it.
+- What's New opens a PS4-style feed: what you and your Steam friends are playing, recent games and new achievements (needs a Steam Web API key for friends), plus your own play history.
+- PlayStation Store and What's New tiles lead the home row, using your icons; every tile is square.
+- Boot video fades into home more smoothly.
+
 ## 0.2.2 (2026-10-23)
 - Background uses the console's royal blue.
 - TV & Video opens like the console: preview row, Down lifts the home row and shows a 4-column app grid.
