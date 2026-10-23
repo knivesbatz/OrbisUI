@@ -43,7 +43,7 @@ public sealed partial class MetadataService
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
         bool sgdb = Secrets.Has(Secrets.SteamGridDb);
-        var todo = _lib.Games.Where(g => force || g.Art == null || g.Background == null || !g.MetaTried || (sgdb && !g.SgdbTried)).ToList();
+        var todo = _lib.Games.Where(g => force || g.Art == null || g.Background == null || !g.MetaTried || (sgdb && WantsSgdb(g))).ToList();
         if (todo.Count == 0) return;
         Log.Info($"Metadata: {todo.Count} items to process");
         var tasks = todo.Select(async g =>
@@ -65,10 +65,12 @@ public sealed partial class MetadataService
         var title = LibraryService.DisplayTitle(g);
 
         // 0) SteamGridDB overrides every other source (the user's choice), unless they picked an image themselves.
-        if (ovr?.ArtPath == null && Secrets.Has(Secrets.SteamGridDb) && (force || !g.SgdbTried))
+        if (ovr?.ArtPath == null && Secrets.Has(Secrets.SteamGridDb) && (force || WantsSgdb(g)))
         {
-            g.SgdbTried = true;
-            changed |= await SteamGridDbAsync(g, title, g.Kind == LaunchKind.Steam ? g.SteamAppId : null, ct, replace: true);
+            var r = await SteamGridDbAsync(g, title, g.Kind == LaunchKind.Steam ? g.SteamAppId : null, ct, replace: true);
+            // Only give up on SteamGridDB once it actually answered; offline starts retry next time.
+            g.SgdbTried = r != null;
+            changed |= r == true;
         }
 
         // 1) Art the user picked, or that came with the game.
@@ -87,7 +89,7 @@ public sealed partial class MetadataService
 
             // 2) SteamGridDB (square grids are what we want for tiles).
             if (g.Art == null || g.Background == null)
-                changed |= await SteamGridDbAsync(g, title, appId, ct);
+                changed |= await SteamGridDbAsync(g, title, appId, ct) == true;
 
             // 2b) libretro-thumbnails: free box art for disc-image names (Redump/No-Intro), no key needed.
             if (g.Art == null && g.Kind == LaunchKind.Emulator)
@@ -109,6 +111,10 @@ public sealed partial class MetadataService
         }
         if (changed) Updated?.Invoke(g);
     }
+
+    /// <summary>SteamGridDB is the default art source: keep trying until the tile comes from it (or the user picked their own).</summary>
+    static bool WantsSgdb(Game g) => AppSettings.Current.Games.GetValueOrDefault(g.Id)?.ArtPath == null
+        && (!g.SgdbTried || g.ArtSource?.StartsWith("SteamGridDB") != true);
 
     static string SourceName(Game g, string path)
     {
@@ -213,7 +219,8 @@ public sealed partial class MetadataService
     }
 
     // ---------------- SteamGridDB ----------------
-    async Task<bool> SteamGridDbAsync(Game g, string title, string? steamAppId, CancellationToken ct, bool replace = false)
+    /// <summary>True when art was saved, false when SteamGridDB has none, null when it couldn't be reached.</summary>
+    async Task<bool?> SteamGridDbAsync(Game g, string title, string? steamAppId, CancellationToken ct, bool replace = false)
     {
         var key = Secrets.Get(Secrets.SteamGridDb);
         if (key == null) return false;
@@ -232,7 +239,8 @@ public sealed partial class MetadataService
         if (gameId == null)
         {
             using var d = await GetJson(Req("search/autocomplete/" + Uri.EscapeDataString(Regex.Replace(title, @"\(Disc \d+\)", "").Trim())), ct);
-            if (d == null || !d.RootElement.TryGetProperty("data", out var arr) || arr.GetArrayLength() == 0) return false;
+            if (d == null) return null;
+            if (!d.RootElement.TryGetProperty("data", out var arr) || arr.GetArrayLength() == 0) return false;
             var best = arr.EnumerateArray().FirstOrDefault(e => TitlesMatch(e.GetProperty("name").GetString() ?? "", title));
             if (best.ValueKind == JsonValueKind.Undefined) best = arr[0];
             gameId = best.GetProperty("id").GetRawText();
