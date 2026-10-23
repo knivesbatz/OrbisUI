@@ -216,6 +216,7 @@ public sealed class HomeScreen : Screen
             new() { Kind = HomeKind.WhatsNew, Title = "What's New", Glyph = "\uE789", IconKey = "whatsnew" },
         };
         list.AddRange(Shell.Library.Visible.Select(g => new HomeItem { Kind = HomeKind.Game, Game = g, Title = LibraryService.DisplayTitle(g) }));
+        list.Add(new HomeItem { Kind = HomeKind.Browser, Title = "Internet Browser", Glyph = "\uE774", IconKey = "browsertile" });
         foreach (var f in AppSettings.Current.Folders)
             list.Add(new HomeItem { Kind = HomeKind.Folder, Folder = f, Title = f.Name, Glyph = "", IconKey = "tv" });
         list.Add(new HomeItem { Kind = HomeKind.Library, Title = "Library", Glyph = "", IconKey = "library" });
@@ -509,6 +510,7 @@ public sealed class HomeScreen : Screen
             case HomeKind.Library: Play(Sfx.Enter); Shell.Push(new LibraryScreen()); break;
             case HomeKind.Store: Play(Sfx.Decide); SteamHandoff(Steam.Links.Store, "PlayStation Store"); break;
             case HomeKind.WhatsNew: Play(Sfx.Enter); Shell.Push(new NotificationsScreen()); break;
+            case HomeKind.Browser: Play(Sfx.Boot); Shell.Push(new BrowserScreen()); break;
         }
     }
 

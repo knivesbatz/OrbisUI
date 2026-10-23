@@ -45,7 +45,7 @@ public static class SettingsScreens
         var title = LibraryService.DisplayTitle(g);
         var items = ControllerFixer.Searches(title).Select(s => new ListItem
         {
-            Glyph = "\uE721", Label = s.label, Sub = () => "Opens in the browser. Save the mod to your Downloads folder.", Activate = () => Native.OpenShell(s.url),
+            Glyph = "\uE721", Label = s.label, Sub = () => "Opens in the browser. Save the mod to your Downloads folder.", Activate = () => Shell.Push(new BrowserScreen(s.url)),
         }).ToList();
         items.Add(new ListItem
         {

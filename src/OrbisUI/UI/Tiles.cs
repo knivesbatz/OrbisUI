@@ -8,7 +8,7 @@ using OrbisUI.Metadata;
 
 namespace OrbisUI.UI;
 
-public enum HomeKind { Game, Folder, Library, App, Add, Store, WhatsNew }
+public enum HomeKind { Game, Folder, Library, App, Add, Store, WhatsNew, Browser }
 
 public sealed class HomeItem
 {
