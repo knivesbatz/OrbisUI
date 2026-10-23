@@ -24,6 +24,7 @@ public static class SettingsScreens
         new ListItem { Glyph = "\uE7FC", Label = "Controllers", Sub = () => Shell.Pad?.PadName ?? "No controller connected", Activate = () => Shell.Push(new ControllerTestScreen()) },
         new ListItem { Glyph = "\uE7FC", Label = "Controller Fixer", Sub = () => "Find and install PlayStation button prompt mods", Activate = () => Shell.Push(FixerGames()) },
         new ListItem { Glyph = "\uE895", Label = "System Software Update", Sub = () => "Version " + Updater.CurrentText, Activate = () => Shell.Push(UpdateScreen()) },
+        new ListItem { Glyph = "\uE8B7", Label = "File Manager", Sub = () => "Browse, copy, move and delete files; install PS4 .pkg files", Activate = () => FileManager.Open() },
         new ListItem { Glyph = "\uE770", Label = "System", Activate = () => Shell.Push(SystemScreen()) },
     });
 

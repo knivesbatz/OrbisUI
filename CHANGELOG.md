@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.1 (2026-10-23)
+- File Manager moved from the home row into Settings.
+
 ## 0.3.0 (2026-10-23)
 - File Manager on the home row: browse drives, copy, move, rename, new folder, delete to the Recycle Bin.
 - PS4 PKG installer: Cross on a .pkg installs games and updates to shadPS4's games folder and DLC to its add-on folder.

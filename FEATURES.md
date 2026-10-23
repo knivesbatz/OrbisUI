@@ -1,4 +1,4 @@
-# Feature status (v0.3.0)
+# Feature status (v0.3.1)
 
 Legend: **Done + tested**: implemented and checked on the ROG Ally or by automated tests. **Done (untested)**: implemented but not exercised end to end yet. **Partial**: works with stated limits. **Not yet**: not implemented.
 
@@ -8,7 +8,7 @@ Legend: **Done + tested**: implemented and checked on the ROG Ally or by automat
 | First-run setup wizard | Done + tested | System check, folders, sound pack, optional keys (DPAPI), preferences; re-run from Settings > System |
 | Boot video + login screen | Done + tested | Your boot video fades into home, PS skips it |
 | Live background + home music | Done + tested | From your own media in Data\Media |
-| Home screen (PS4 layout) | Done + tested | Status bar, square tiles, Store / What's New / Browser / File Manager tiles, TV & Video, Library |
+| Home screen (PS4 layout) | Done + tested | Status bar, square tiles, Store / What's New / Browser tiles, TV & Video, Library |
 | Function bar actions | Done + tested | Notifications, Friends, Messages, Settings, Power native; Store, Profile and Trophies hand off to Steam |
 | Native DualShock 4 input | Done + tested | SDL3 HIDAPI, USB and Bluetooth, hot-plug toasts, controller test screen |
 | PS4 sound and icon packs | Done + tested | Your files, repaired WAV headers |
@@ -21,7 +21,7 @@ Legend: **Done + tested**: implemented and checked on the ROG Ally or by automat
 | Return home / PS button over a running game | Done + tested | |
 | Emulator Ally profiles | Done + tested | Vulkan, no OSD, fast boot for DuckStation, PCSX2, PPSSPP, RPCS3, Vita3K; shadPS4 splash off; configs backed up first. PS1, PS2 and PS3 test ROMs launch and run |
 | PS4 PKG installer | Done + tested | ShadPs4Plus pkg_extractor: games and updates to shadPS4's games folder, DLC to its add-on folder; the LIMBO test package installed and appeared in the library |
-| File manager | Done + tested | Drives and folders, copy, move, rename, new folder, delete to the Recycle Bin, open files, install .pkg |
+| File manager | Done + tested | In Settings. Drives and folders, copy, move, rename, new folder, delete to the Recycle Bin, open files, install .pkg |
 | Internet browser | Done + tested | WebView2, D-pad link navigation, Google by default |
 | What's New feed, Friends and Messages | Done + tested | Steam Web API key needed; friends need a public friends list; chat opens in Steam |
 | Wi-Fi and audio output | Done + tested | Native lists; joining a new secured network asks for its password with the on-screen keyboard |

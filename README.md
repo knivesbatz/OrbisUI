@@ -4,7 +4,7 @@ A portable, controller-first PlayStation 4 style home screen for Windows handhel
 
 OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDAPI over USB and Bluetooth, no DS4Windows). It brings Steam, PC games and the PS1/PS2/PS3/PS4/PSP/Vita emulators together in one console-style interface. It is a personal project.
 
-**Latest release:** [v0.3.0](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.3.1](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
 ## Features (implemented)
 
@@ -15,7 +15,7 @@ OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDA
 - PS4 sound pack and icon pack (your files; repaired WAV headers), royal-blue theme, everything square-cornered
 - TV & Video folder: preview row, Down opens a 4-column app grid; apps added in Settings, renamed, with SteamGridDB or image-file art
 - Built-in controller-friendly web browser (Google by default)
-- File Manager: drives and folders, copy, move, rename, new folder, delete to the Recycle Bin
+- File Manager in Settings: drives and folders, copy, move, rename, new folder, delete to the Recycle Bin
 - PS4 PKG installer in the File Manager: games, updates and DLC extracted for shadPS4
 - Friends and Messages: your Steam friends, who's online and what they're playing; Cross opens a chat in Steam
 - Notifications, power menu, setup wizard, on-screen keyboard
