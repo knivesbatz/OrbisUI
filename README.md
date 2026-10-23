@@ -4,7 +4,7 @@ A portable, controller-first PlayStation 4 style home screen for Windows handhel
 
 OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDAPI over USB and Bluetooth, no DS4Windows). It brings Steam, PC games and the PS1/PS2/PS3/PS4/PSP/Vita emulators together in one console-style interface. It is a personal project.
 
-**Latest release:** [v0.2.3](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.2.4](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
 ## Features (implemented)
 
@@ -22,7 +22,7 @@ OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDA
 - SteamGridDB artwork by default (retried after offline starts), controller cover picker, backgrounds after 5 s
 - Launch splash until the game is up, PS button returns home over a running game
 - Emulated and added games are added to Steam with SteamGridDB art so they run with the Big Picture overlay
-- Emulators fast boot by default (DuckStation and PCSX2 skip the BIOS, shadPS4 splash off); PCSX2 OSD off; DuckStation Ally profile
+- Emulators tuned for the Ally by default: Vulkan, no OSD, fast boot (BIOS and splash skipped) and 16:9/720p-class rendering for DuckStation, PCSX2, PPSSPP, RPCS3 and Vita3K, shadPS4 splash off; configs backed up first
 - Per-game ReShade preset, Lossless Scaling auto-activation with a "PRO Mode Active" notification
 - Controller Fixer: find and install PlayStation button prompt mods with backup and undo
 
@@ -34,7 +34,7 @@ OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDA
 1. File manager and PS4 PKG extractor (#22)
 2. Native Wi-Fi, Bluetooth and audio pickers in the UI (#19)
 3. Steam friends list and chat inside the UI (#24)
-4. PlayStation Store metadata source (#8) and Ally profiles for PPSSPP, RPCS3, Vita3K, shadPS4 (#13)
+4. PlayStation Store metadata source (#8); ReShade in every emulator folder (needs ReShade installed there once)
 5. RetroAchievements, patches and texture packs (#27)
 6. On-device check of Lossless Scaling detection with a real game (#20)
 
@@ -95,7 +95,7 @@ The public package contains no Sony media. Built-in tones and vector icons are u
 | PSP | PPSSPP | `--fullscreen --escape-exit "{rom}"` |
 | Vita | Vita3K | `-F -r {id}` |
 
-Arguments can be changed per system (Settings > Emulators) and per game (OPTIONS > Game Settings). If DuckStation has never been set up, OrbisUI writes an Ally profile so games boot straight in: 720p (3x), 16:9 widescreen hack, bilinear smoothing, no on-screen messages and DualShock 4 bindings. Any existing config is backed up first. Configs you already tuned are left alone.
+Arguments can be changed per system (Settings > Emulators) and per game (OPTIONS > Game Settings). If DuckStation has never been set up, OrbisUI writes an Ally profile so games boot straight in: 720p (3x), 16:9 widescreen hack, bilinear smoothing, no on-screen messages and DualShock 4 bindings. Any existing config is backed up first. Configs you already tuned keep everything except the Ally essentials (Vulkan, no OSD, fast boot), changed after a backup. PPSSPP, RPCS3 and Vita3K get a Vulkan, no-OSD, fullscreen starter config when they have none.
 
 ## Building
 

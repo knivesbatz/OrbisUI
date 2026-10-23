@@ -221,4 +221,20 @@ public class CoreTests
         var raw = File.ReadAllBytes(Path.Combine(AppPaths.Config, "secrets.dat"));
         Assert.DoesNotContain("super-secret-value", Encoding.UTF8.GetString(raw));
     }
+
+    [Fact]
+    public void SetIniKeys_ReplacesAddsAndBacksUp()
+    {
+        var ini = Path.Combine(AppPaths.Root, "emu-test", "PCSX2.ini");
+        Directory.CreateDirectory(Path.GetDirectoryName(ini)!);
+        File.WriteAllText(ini, "[EmuCore]\r\nEnableFastBoot = false\r\n[EmuCore/GS]\r\nRendererX = 1\r\nRenderer = 12\r\n");
+        Assert.True(EmulatorProfiles.SetIniKeys(ini, "EmuCore/GS", ("Renderer", "14"), ("OsdMessagesPos", "0")));
+        Assert.True(EmulatorProfiles.SetIniKeys(ini, "EmuCore", ("EnableFastBoot", "true")));
+        var text = File.ReadAllText(ini);
+        Assert.Contains("RendererX = 1\r\nRenderer = 14\r\n", text);
+        Assert.Contains("[EmuCore/GS]\r\nOsdMessagesPos = 0", text);
+        Assert.Contains("EnableFastBoot = true\r\n", text);
+        Assert.False(EmulatorProfiles.SetIniKeys(ini, "EmuCore/GS", ("Renderer", "14")));
+        Assert.NotEmpty(Directory.GetFiles(AppPaths.Backups, "emu-test-PCSX2.ini-*"));
+    }
 }

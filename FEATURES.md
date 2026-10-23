@@ -24,6 +24,7 @@ Legend: **Done + tested**: implemented and checked on the ROG Ally or by automat
 | Controller art picker | Done + tested | Up to 50 SteamGridDB square options, name search, image file |
 | Game launching + splash + return | Partial | Window-ready detection and return to home are implemented. Steam launch is not yet verified on device |
 | DuckStation Ally profile | Done + tested | Written only when DuckStation was never set up, after a backup |
+| PCSX2 / PPSSPP / RPCS3 / Vita3K Ally profiles | Done (untested) | Vulkan, no OSD, fast boot; PS1/PS2/PS3 test ROMs launched and stayed running, image quality not checked on device |
 | Other emulator profiles (PCSX2, PPSSPP, RPCS3, Vita3K, shadPS4) | Not yet | Your existing PCSX2 and shadPS4 configs are used as they are |
 | PS button returns home over a running emulator | Done (untested) | |
 | TV & Video folder | Done + tested | Down opens the square app row; apps are added in Settings > TV & Video (programs only); art from SteamGridDB or an image file via Options > Change Artwork |

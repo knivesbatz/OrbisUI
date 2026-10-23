@@ -12,12 +12,13 @@ Each item maps to a [GitHub issue](https://github.com/knivesbatz/OrbisUI/issues)
 - [x] Artwork pipeline with SteamGridDB override and controller art picker
 - [x] Launch, splash, return home, PS button over emulators
 - [x] DuckStation Ally profile (backup first)
+- [x] Ally profiles for PCSX2, PPSSPP, RPCS3 and Vita3K: Vulkan, no OSD, fast boot (v0.2.4)
 - [x] TV & Video folder with square apps, added from Settings
 - [x] Library grid, game options, power menu, notifications, settings
 - [x] Lossless Scaling hotkey activation, GitHub auto-updater
 - [x] Unit tests, build script, portable ZIP
 
-## Done (v0.2.0 to v0.2.3)
+## Done (v0.2.0 to v0.2.4)
 - [x] UI sounds fixed (pack WAV headers repaired), live background, boot video, home music
 - [x] Display settings with revert timer, PRO mode notification, emulator fast boot
 - [x] PS4 status bar header, row layout, TV & Video grid, Store / What's New / browser tiles, square corners
@@ -28,6 +29,6 @@ Each item maps to a [GitHub issue](https://github.com/knivesbatz/OrbisUI/issues)
 1. File manager and PS4 PKG extractor (#22)
 2. Native Wi-Fi, Bluetooth and audio device pickers (#19)
 3. Steam friends list and chat in the UI (#24)
-4. PlayStation Store metadata source (#8); PPSSPP, RPCS3, Vita3K and shadPS4 Ally profiles (#13)
+4. PlayStation Store metadata source (#8); ReShade installed in every emulator folder (#13)
 5. RetroAchievements, patches and texture packs (#27)
 6. Verify Lossless Scaling detection on the Ally with a real game (#20)

@@ -4,7 +4,7 @@ namespace OrbisUI.Library;
 
 /// <summary>
 /// ROG Ally starter profiles. Applied only when an emulator has never been set up (so its own first-run wizard would
-/// block a headless launch). Existing configs are backed up to Backups\ before anything is written; tuned configs are left alone.
+/// block a headless launch). Tuned configs only get the Ally essentials (Vulkan, no OSD, fast boot), always after a backup to Backups.
 /// </summary>
 public static class EmulatorProfiles
 {
@@ -13,7 +13,81 @@ public static class EmulatorProfiles
         try { EnsureDuckStation(); } catch (Exception ex) { Log.Warn("DuckStation profile: " + ex.Message); }
         try { EnsurePcsx2QuietOsd(); } catch (Exception ex) { Log.Warn("PCSX2 profile: " + ex.Message); }
         try { EnsureShadPs4NoSplash(); } catch (Exception ex) { Log.Warn("shadPS4 profile: " + ex.Message); }
+        try { EnsureStarter("PSP", Path.Combine("memstick", "PSP", "SYSTEM", "ppsspp.ini"), PpssppIni); } catch (Exception ex) { Log.Warn("PPSSPP profile: " + ex.Message); }
+        try { EnsureStarter("PS3", Path.Combine("config", "config.yml"), Rpcs3Yml); } catch (Exception ex) { Log.Warn("RPCS3 profile: " + ex.Message); }
+        try { EnsureStarter("VITA", "config.yml", Vita3kYml); } catch (Exception ex) { Log.Warn("Vita3K profile: " + ex.Message); }
     }
+
+    /// <summary>
+    /// Set "Key = value" lines in an ini, adding missing ones under [section]. Backs the file up once if anything changes.
+    /// Keys are matched anywhere in the file, so only use keys that are unique to one section. Returns true when the file changed.
+    /// </summary>
+    public static bool SetIniKeys(string ini, string section, params (string key, string value)[] keys)
+    {
+        var text = File.ReadAllText(ini);
+        var orig = text;
+        foreach (var (key, value) in keys)
+        {
+            var rx = new System.Text.RegularExpressions.Regex($@"^{System.Text.RegularExpressions.Regex.Escape(key)}[ \t]*=[^\r\n]*", System.Text.RegularExpressions.RegexOptions.Multiline);
+            if (rx.IsMatch(text)) text = rx.Replace(text, $"{key} = {value}", 1);
+            else if (text.Contains($"[{section}]")) text = text.Replace($"[{section}]", $"[{section}]\r\n{key} = {value}");
+            else text += $"\r\n[{section}]\r\n{key} = {value}\r\n";
+        }
+        if (text == orig) return false;
+        Log.Info("Config backed up to " + Backup(ini));
+        AtomicFile.WriteAllText(ini, text);
+        return true;
+    }
+
+    /// <summary>Write an Ally starter config for a portable emulator only when it has none yet; existing configs are never replaced.</summary>
+    static void EnsureStarter(string system, string relPath, string content)
+    {
+        var exe = Emulators.ExePath(system);
+        if (exe == null) return;
+        var file = Path.Combine(Path.GetDirectoryName(exe)!, relPath);
+        if (File.Exists(file)) return;
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        AtomicFile.WriteAllText(file, content);
+        Log.Info($"{system} ROG Ally profile written: {file}");
+    }
+
+    // PPSSPP (portable memstick next to the exe): Vulkan, 3x internal (1440x816), fullscreen, no FPS counter, OSD or update check.
+    const string PpssppIni = """
+        [General]
+        FirstRun = False
+        CheckForNewVersion = False
+        ShowOnScreenMessages = False
+        [Graphics]
+        GraphicsBackend = 3 (VULKAN)
+        InternalResolution = 3
+        FullScreen = True
+        ShowFPSCounter = 0
+        """;
+
+    // RPCS3: Vulkan, 720p 16:9, no performance overlay or compilation hints, fullscreen.
+    const string Rpcs3Yml = """
+        Video:
+          Renderer: Vulkan
+          Resolution: 1280x720
+          Aspect ratio: 16:9
+          Performance Overlay:
+            Enabled: false
+        Miscellaneous:
+          Start games in fullscreen mode: true
+          Show shader compilation hint: false
+          Show PPU compilation hint: false
+          Show autosave/autoload hint: false
+        """;
+
+    // Vita3K: Vulkan, boot straight into the game (no live area), fullscreen, no welcome dialog or performance overlay.
+    const string Vita3kYml = """
+        backend-renderer: Vulkan
+        boot-apps-full-screen: true
+        show-live-area-screen: false
+        show-welcome: false
+        performance-overlay: false
+        check-for-updates: false
+        """;
 
     static string Backup(string file)
     {
@@ -52,7 +126,13 @@ public static class EmulatorProfiles
         if (File.Exists(ini))
         {
             var text = File.ReadAllText(ini);
-            if (!text.Contains("SetupWizardIncomplete = true", StringComparison.OrdinalIgnoreCase) && text.Contains("SettingsVersion")) return; // already set up
+            if (!text.Contains("SetupWizardIncomplete = true", StringComparison.OrdinalIgnoreCase) && text.Contains("SettingsVersion"))
+            {
+                // Already set up: keep the user's tuning, only make sure it renders with Vulkan and shows no OSD.
+                SetIniKeys(ini, "GPU", ("Renderer", "Vulkan"));
+                SetIniKeys(ini, "Display", ("ShowOSDMessages", "false"), ("ShowFPS", "false"));
+                return;
+            }
             Log.Info("DuckStation config backed up to " + Backup(ini));
         }
         var bios = FindPs1Bios();
@@ -76,7 +156,7 @@ public static class EmulatorProfiles
             {(bios != null ? $"SearchDirectory = {bios}" : "")}
 
             [GPU]
-            Renderer = Automatic
+            Renderer = Vulkan
             ResolutionScale = 3
             TextureFilter = Bilinear
             WidescreenHack = true
@@ -141,23 +221,16 @@ public static class EmulatorProfiles
     }
 
     /// <summary>
-    /// PCSX2 should run without on-screen messages (OsdMessagesPos = 0 hides them; they still go to PCSX2's log).
-    /// Only that one key is changed, after a backup; every other setting the user tuned is kept.
+    /// PCSX2 on the Ally: Vulkan, no on-screen messages (OsdMessagesPos = 0; they still go to the log), fast boot, widescreen patches.
+    /// Only those keys are changed, after a backup; every other setting the user tuned is kept.
     /// </summary>
     public static void EnsurePcsx2QuietOsd()
     {
         var ini = Pcsx2Ini();
         if (ini == null || !File.Exists(ini)) return;
-        var text = File.ReadAllText(ini);
-        var rx = new System.Text.RegularExpressions.Regex(@"^OsdMessagesPos\s*=\s*(\d+)\s*$", System.Text.RegularExpressions.RegexOptions.Multiline);
-        var m = rx.Match(text);
-        if (m.Success && m.Groups[1].Value == "0") return;
-        Log.Info("PCSX2 config backed up to " + Backup(ini));
-        if (m.Success) text = rx.Replace(text, "OsdMessagesPos = 0", 1);
-        else if (text.Contains("[EmuCore/GS]")) text = text.Replace("[EmuCore/GS]", "[EmuCore/GS]\r\nOsdMessagesPos = 0");
-        else text += "\r\n[EmuCore/GS]\r\nOsdMessagesPos = 0\r\n";
-        AtomicFile.WriteAllText(ini, text);
-        Log.Info("PCSX2 on-screen messages turned off: " + ini);
+        // Renderer 14 = Vulkan. Fast boot and widescreen patches live in [EmuCore].
+        if (SetIniKeys(ini, "EmuCore/GS", ("OsdMessagesPos", "0"), ("Renderer", "14"))) Log.Info("PCSX2 set to Vulkan, no OSD: " + ini);
+        if (SetIniKeys(ini, "EmuCore", ("EnableFastBoot", "true"), ("EnableWideScreenPatches", "true"))) Log.Info("PCSX2 fast boot and widescreen on: " + ini);
     }
 
     /// <summary>shadPS4 shows the game's splash image before booting; turn it off (config.json in newer builds, config.toml in older ones). Backed up first.</summary>

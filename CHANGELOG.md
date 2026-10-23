@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.4 (2026-10-23)
+- Every emulator defaults to the ROG Ally setup: Vulkan, no on-screen messages, fast boot. DuckStation and PCSX2 keep your tuning and only get those keys (backed up first); PPSSPP (3x, fullscreen), RPCS3 (720p 16:9, no overlay or hints) and Vita3K (boots straight into the game, fullscreen) get a starter config when they have none.
+
 ## 0.2.3 (2026-10-23)
 - Internet Browser on the home row (controller: D-pad between links, Cross select, Triangle address or Google search, Circle back). Controller Fixer searches open in it.
 - What's New opens a PS4-style feed: what you and your Steam friends are playing, recent games and new achievements (needs a Steam Web API key for friends), plus your own play history.
