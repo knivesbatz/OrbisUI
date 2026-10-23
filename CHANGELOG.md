@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 (2026-10-23)
+- Background uses the console's royal blue.
+- TV & Video opens like the console: preview row, Down lifts the home row and shows a 4-column app grid.
+- Up highlights the header icons in place (Messages, Settings and Power added to the bar).
+- Per-game ReShade preset in Game Settings, applied before launch (ini backed up, anti-cheat games skipped).
+- Emulated and added games are added to Steam with SteamGridDB art before Steam starts (Settings > Library; shortcuts.vdf is backed up).
+- Controller Fixer in Settings: search for PlayStation prompt mods, install from Downloads with backup, undo.
+
 ## 0.2.1 (2026-10-23)
 - Home screen matches the console: status bar with PS Plus, notifications, friends, your Steam avatar and name, trophies and the clock; the game row sits right under it with the console's tile sizes, and the selected game's title sits beside its Start bar. Up slides the row down and shows the function icons.
 
