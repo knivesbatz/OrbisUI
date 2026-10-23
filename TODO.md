@@ -25,10 +25,15 @@ Each item maps to a [GitHub issue](https://github.com/knivesbatz/OrbisUI/issues)
 - [x] ReShade presets (#21), Steam shortcuts import (#10), Controller Fixer (#23), WebView2 browser (#22 part)
 - [x] What's New activity feed (#24 part), SteamGridDB as default art source
 
+## Done (v0.3.0)
+- [x] File manager and PS4 PKG installer for shadPS4 (#22)
+- [x] Shortcuts (.lnk, .url) and Microsoft Store apps as games; game versions with a picker before launch
+- [x] Rename TV & Video apps; launch splash holds until the game is fullscreen
+- [x] Native Wi-Fi and audio output pickers (#19); Friends and Messages from Steam with chat handoff (#24)
+
 ## Next (priority order)
-1. File manager and PS4 PKG extractor (#22)
-2. Native Wi-Fi, Bluetooth and audio device pickers (#19)
-3. Steam friends list and chat in the UI (#24)
-4. PlayStation Store metadata source (#8); ReShade installed in every emulator folder (#13)
-5. RetroAchievements, patches and texture packs (#27)
-6. Verify Lossless Scaling detection on the Ally with a real game (#20)
+1. ReShade in every emulator folder: needs ReShade downloaded from reshade.me once (#13)
+2. Verify Lossless Scaling detection on the Ally with a real game (#20)
+3. RetroAchievements sign-in inside OrbisUI and texture packs (#27)
+4. Native Bluetooth pairing (#19)
+5. PlayStation Store metadata: blocked, no public API (#8)

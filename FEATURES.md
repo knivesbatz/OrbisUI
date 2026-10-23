@@ -1,4 +1,4 @@
-# Feature status (v0.1.0)
+# Feature status (v0.3.0)
 
 Legend: **Done + tested**: implemented and checked on the ROG Ally or by automated tests. **Done (untested)**: implemented but not exercised end to end yet. **Partial**: works with stated limits. **Not yet**: not implemented.
 
@@ -6,41 +6,32 @@ Legend: **Done + tested**: implemented and checked on the ROG Ally or by automat
 |---|---|---|
 | Portable folder layout, settings, logs | Done + tested | Atomic JSON writes, rotating log, unit tests |
 | First-run setup wizard | Done + tested | System check, folders, sound pack, optional keys (DPAPI), preferences; re-run from Settings > System |
-| Boot animation + login screen | Done + tested | Your boot video (Data\Media\boot.mp4) fades into home, PS skips it; otherwise the original animation and login screen; can be turned off |
-| Live background + home music | Done + tested | Data\Media\background.mp4 loops behind the UI (paused when not in front); music.mp3 plays at home and pauses for games and apps (audio not verified by ear) |
-| Home screen (PS4 layout) | Done + tested | Square tiles, enlarged focus tile, title and details, top function bar, clock, user |
-| Function bar actions | Partial | Store, Friends, Messages, Profile and Trophies hand off to Steam (`steam://`). Notifications, Settings and Power are native |
-| Background art | Done + tested | SteamGridDB heroes only, fade in after 5 s |
-| Native DualShock 4 input | Done + tested | SDL3 HIDAPI, USB and Bluetooth, auto-repeat, hot-plug toasts, controller test screen |
-| Keyboard fallback | Done + tested | |
-| PS4 sound pack | Done + tested | 43 sounds imported from your folder; their broken WAV headers are repaired on load (they were silent in 0.1.0); volume, mute, throttling, generated fallback tones |
-| PS4 icon pack | Done + tested | Imported from your local icon folder; vector glyph fallback |
-| Steam library + shortcuts | Done + tested | libraryfolders.vdf, appmanifests, shortcuts.vdf; tools filtered |
-| ROM scanning | Done + tested | Per-system folders, extra folders, PCSX2's own folders, multi-track .bin cue generation |
-| Multi-disc grouping + disc picker | Done (untested) | Grouping is unit-tested; the picker has not been launched on device yet |
-| PS4 / PS3 / Vita installed titles | Done (untested) | PARAM.SFO parsing is unit-tested; no PS4/PS3/Vita games on this device yet |
-| Artwork pipeline | Done + tested | SteamGridDB (override), package art, Steam cache, emulator covers, libretro-thumbnails, Steam Store, IGDB (with keys) |
-| PlayStation Store metadata | Not yet | No public API; PS4 game-package icons are used instead |
-| Controller art picker | Done + tested | Up to 50 SteamGridDB square options, name search, image file |
-| Game launching + splash + return | Partial | Window-ready detection and return to home are implemented. Steam launch is not yet verified on device |
-| DuckStation Ally profile | Done + tested | Written only when DuckStation was never set up, after a backup |
-| PCSX2 / PPSSPP / RPCS3 / Vita3K Ally profiles | Done (untested) | Vulkan, no OSD, fast boot; PS1/PS2/PS3 test ROMs launched and stayed running, image quality not checked on device |
-| Other emulator profiles (PCSX2, PPSSPP, RPCS3, Vita3K, shadPS4) | Not yet | Your existing PCSX2 and shadPS4 configs are used as they are |
-| PS button returns home over a running emulator | Done (untested) | |
-| TV & Video folder | Done + tested | Down opens the square app row; apps are added in Settings > TV & Video (programs only); art from SteamGridDB or an image file via Options > Change Artwork |
-| Library screen | Done + tested | Grid, platform filter (△), hidden games, rescan (□) |
-| Game options | Done + tested | Information, Change Artwork, Game Settings (name, args, Lossless Scaling), hide, Steam uninstall |
-| Power menu | Done (untested) | Close application, rest, shut down, restart, desktop, Big Picture |
-| Settings | Partial | Real actions only. Display (resolution, refresh rate, brightness, 15 s revert) is built in; Wi-Fi, Bluetooth and audio still open the matching Windows Settings page |
-| Lossless Scaling auto-activation | Done (untested) | Sends LS's own hotkey (read from its Settings.xml) to the game window after the delay; "PRO Mode Active" shows over the game once an LS window covering the game is detected (detection heuristic not yet verified with a real game) |
-| Emulator fast boot | Done (untested in-game) | DuckStation and PCSX2 start with -fastboot; shadPS4 splash turned off after a config backup |
-| Auto-updater | Done (untested) | GitHub Releases + SHA-256, rename-swap with rollback. Live once v0.1.1 is published |
-| Notifications drawer + toasts | Done + tested | Launcher events only |
-| Import games into Steam (shortcuts.vdf) | Not yet | Binary VDF writer exists and is tested |
-| Steam friends / chat / activity inside the UI | Not yet | Handoff to Steam for now |
-| ReShade per-game presets | Not yet | |
-| Built-in browser and file manager | Not yet | A controller file picker exists |
-| PKG extractor | Not yet | |
-| Controller Fixer | Not yet | |
-| RetroAchievements | Not yet | |
-| Patches / texture packs | Not yet | |
+| Boot video + login screen | Done + tested | Your boot video fades into home, PS skips it |
+| Live background + home music | Done + tested | From your own media in Data\Media |
+| Home screen (PS4 layout) | Done + tested | Status bar, square tiles, Store / What's New / Browser / File Manager tiles, TV & Video, Library |
+| Function bar actions | Done + tested | Notifications, Friends, Messages, Settings, Power native; Store, Profile and Trophies hand off to Steam |
+| Native DualShock 4 input | Done + tested | SDL3 HIDAPI, USB and Bluetooth, hot-plug toasts, controller test screen |
+| PS4 sound and icon packs | Done + tested | Your files, repaired WAV headers |
+| Steam library + shortcuts, ROM scanning, multi-disc picker | Done + tested | |
+| PC games from .exe, .lnk, .url and Microsoft Store apps | Done + tested | Shortcuts to an exe launch that exe with its arguments; .url and Store apps start through the shell and are tracked by their window |
+| Game versions with a picker before launch | Done + tested | Game Settings > Versions: extra exes, shortcuts or Store apps |
+| Artwork pipeline | Done + tested | SteamGridDB by default, controller art picker, backgrounds after 5 s |
+| PlayStation Store metadata | Not yet | Sony has no public PlayStation Store API; PS4 package icons, SteamGridDB, Steam Store and IGDB are used |
+| Launch splash | Done + tested | Fades in and holds until the game window is fullscreen/maximized (at most 10 s after it appears) |
+| Return home / PS button over a running game | Done + tested | |
+| Emulator Ally profiles | Done + tested | Vulkan, no OSD, fast boot for DuckStation, PCSX2, PPSSPP, RPCS3, Vita3K; shadPS4 splash off; configs backed up first. PS1, PS2 and PS3 test ROMs launch and run |
+| PS4 PKG installer | Done + tested | ShadPs4Plus pkg_extractor: games and updates to shadPS4's games folder, DLC to its add-on folder; the LIMBO test package installed and appeared in the library |
+| File manager | Done + tested | Drives and folders, copy, move, rename, new folder, delete to the Recycle Bin, open files, install .pkg |
+| Internet browser | Done + tested | WebView2, D-pad link navigation, Google by default |
+| What's New feed, Friends and Messages | Done + tested | Steam Web API key needed; friends need a public friends list; chat opens in Steam |
+| Wi-Fi and audio output | Done + tested | Native lists; joining a new secured network asks for its password with the on-screen keyboard |
+| Bluetooth pairing | Partial | Opens Windows Bluetooth settings |
+| Display settings | Done + tested | Resolution, refresh rate, brightness, 15 s revert |
+| TV & Video apps | Done + tested | Add, rename, change art, remove |
+| ReShade per-game presets | Done (untested) | Needs ReShade installed in the game's or emulator's folder; no emulator folder has ReShade yet |
+| Lossless Scaling auto-activation | Done (untested) | Detection of the scaled window not yet verified with a real game |
+| Controller Fixer | Done (untested) | |
+| Import games into Steam | Done + tested | shortcuts.vdf backed up first |
+| Auto-updater | Done + tested | GitHub Releases + SHA-256 |
+| RetroAchievements | Partial | Use each emulator's own login (PCSX2 is already signed in). Their tokens are encrypted per emulator, so OrbisUI doesn't copy them |
+| Patches / texture packs | Partial | PCSX2 widescreen and no-interlace patches and DuckStation's widescreen hack are on; there is no trusted texture-pack source to download from |

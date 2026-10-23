@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 (2026-10-23)
+- File Manager on the home row: browse drives, copy, move, rename, new folder, delete to the Recycle Bin.
+- PS4 PKG installer: Cross on a .pkg installs games and updates to shadPS4's games folder and DLC to its add-on folder.
+- PC games from shortcuts (.lnk, .url) and Microsoft Store apps.
+- Game versions: add other exes or shortcuts in Game Settings > Versions and choose one before the game starts.
+- TV & Video apps can be renamed.
+- The launch splash fades in and stays until the game is fullscreen.
+- Friends and Messages list your Steam friends with who's online and playing; Cross opens a chat in Steam.
+- Wi-Fi and audio output pickers in Settings > Network and Devices.
+- Yes/No dialogs show their icons again.
+
 ## 0.2.4 (2026-10-23)
 - Every emulator defaults to the ROG Ally setup: Vulkan, no on-screen messages, fast boot. DuckStation and PCSX2 keep your tuning and only get those keys (backed up first); PPSSPP (3x, fullscreen), RPCS3 (720p 16:9, no overlay or hints) and Vita3K (boots straight into the game, fullscreen) get a starter config when they have none.
 

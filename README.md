@@ -4,7 +4,7 @@ A portable, controller-first PlayStation 4 style home screen for Windows handhel
 
 OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDAPI over USB and Bluetooth, no DS4Windows). It brings Steam, PC games and the PS1/PS2/PS3/PS4/PSP/Vita emulators together in one console-style interface. It is a personal project.
 
-**Latest release:** [v0.2.4](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.3.0](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
 ## Features (implemented)
 
@@ -13,30 +13,34 @@ OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDA
 - PlayStation Store and What's New tiles; What's New is an activity feed of you and your Steam friends (friends need a Steam Web API key)
 - Live video background, boot video that fades into home (PS skips it) and home music, from your own media in `Data\Media`
 - PS4 sound pack and icon pack (your files; repaired WAV headers), royal-blue theme, everything square-cornered
-- TV & Video folder: preview row, Down opens a 4-column app grid; apps added in Settings with SteamGridDB or image-file art
+- TV & Video folder: preview row, Down opens a 4-column app grid; apps added in Settings, renamed, with SteamGridDB or image-file art
 - Built-in controller-friendly web browser (Google by default)
+- File Manager: drives and folders, copy, move, rename, new folder, delete to the Recycle Bin
+- PS4 PKG installer in the File Manager: games, updates and DLC extracted for shadPS4
+- Friends and Messages: your Steam friends, who's online and what they're playing; Cross opens a chat in Steam
 - Notifications, power menu, setup wizard, on-screen keyboard
 
 **Games**
-- Steam games and shortcuts, PC games, PS1/PS2/PS3/PS4/PSP/Vita games from one ROM folder, multi-disc grouping with a disc picker
+- Steam games and shortcuts, PC games from .exe, .lnk, .url or Microsoft Store apps, PS1/PS2/PS3/PS4/PSP/Vita games from one ROM folder, multi-disc grouping with a disc picker
+- Game versions: add other exes, shortcuts or Store apps in Game Settings, then pick one before launch
 - SteamGridDB artwork by default (retried after offline starts), controller cover picker, backgrounds after 5 s
-- Launch splash until the game is up, PS button returns home over a running game
+- Launch splash fades in and holds until the game is fullscreen; PS button returns home over a running game
 - Emulated and added games are added to Steam with SteamGridDB art so they run with the Big Picture overlay
 - Emulators tuned for the Ally by default: Vulkan, no OSD, fast boot (BIOS and splash skipped) and 16:9/720p-class rendering for DuckStation, PCSX2, PPSSPP, RPCS3 and Vita3K, shadPS4 splash off; configs backed up first
 - Per-game ReShade preset, Lossless Scaling auto-activation with a "PRO Mode Active" notification
 - Controller Fixer: find and install PlayStation button prompt mods with backup and undo
 
 **System**
+- Wi-Fi and audio output pickers in the UI; Bluetooth opens Windows Settings
 - Display settings in the UI (resolution, refresh rate, brightness) with a 15 s revert timer
 - Portable folder, DPAPI-encrypted keys, low idle CPU, GitHub auto-updater with SHA-256 checks
 
 ## Next update (TODO)
-1. File manager and PS4 PKG extractor (#22)
-2. Native Wi-Fi, Bluetooth and audio pickers in the UI (#19)
-3. Steam friends list and chat inside the UI (#24)
-4. PlayStation Store metadata source (#8); ReShade in every emulator folder (needs ReShade installed there once)
-5. RetroAchievements, patches and texture packs (#27)
-6. On-device check of Lossless Scaling detection with a real game (#20)
+1. ReShade in every emulator folder: needs ReShade downloaded from reshade.me once (#13)
+2. On-device check of Lossless Scaling detection with a real game (#20)
+3. RetroAchievements sign-in inside OrbisUI and texture packs (#27); use each emulator's own login for now
+4. Native Bluetooth pairing (#19)
+5. PlayStation Store metadata: blocked, Sony has no public PlayStation Store API (#8)
 
 ## Install (portable)
 
