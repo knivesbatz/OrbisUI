@@ -193,7 +193,7 @@ public sealed class MainWindow : Window
     public void OnPadButton(Btn b, bool down)
     {
         // PS button while an emulator/PC game is in front: come back to the home screen; the game keeps running.
-        if (down && b == Btn.PS && _gameInFront && Shell.Launcher.Running is Game g && g.Kind is LaunchKind.Emulator or LaunchKind.Exe)
+        if (down && b == Btn.PS && _gameInFront && Shell.Launcher.Running is Game g && g.Kind is LaunchKind.Emulator or LaunchKind.Exe or LaunchKind.Url)
         {
             Dispatcher.BeginInvoke(ShowHomeOverGame);
             return;
@@ -215,6 +215,8 @@ public sealed class MainWindow : Window
     }
 
     // ---------------- games ----------------
+    bool _versionChosen;
+
     public async void StartGame(Game g, string? disc = null)
     {
         if (Shell.Launcher.Running?.Id == g.Id && Shell.Launcher.GameWindow != IntPtr.Zero)
@@ -227,6 +229,11 @@ public sealed class MainWindow : Window
         if (Shell.Launcher.Running is Game other)
         {
             Shell.Confirm("Close Application", $"{other.Title} is running. Close it and start {LibraryService.DisplayTitle(g)}?", () => { Shell.Launcher.CloseGame(); });
+            return;
+        }
+        if (disc == null && !g.IsVersion && !_versionChosen && AppSettings.Current.Games.GetValueOrDefault(g.Id)?.Versions is { Count: > 0 })
+        {
+            GameMenu.PickVersion(g, v => { _versionChosen = true; try { StartGame(v); } finally { _versionChosen = false; } });
             return;
         }
         if (disc == null && g.Discs is { Count: > 1 } discs)
@@ -395,7 +402,7 @@ public sealed class MainWindow : Window
         art.RenderTransform = st;
         UiKit.Animate(st, ScaleTransform.ScaleXProperty, 1, 380);
         UiKit.Animate(st, ScaleTransform.ScaleYProperty, 1, 380);
-        UiKit.Animate(_splash, OpacityProperty, 1, 250);
+        UiKit.Animate(_splash, OpacityProperty, 1, 500);
         var spin = new DoubleAnimation(0, 360, TimeSpan.FromSeconds(1)) { RepeatBehavior = RepeatBehavior.Forever };
         Timeline.SetDesiredFrameRate(spin, 30);
         ((RotateTransform)_spinner.RenderTransform).BeginAnimation(RotateTransform.AngleProperty, spin);

@@ -100,7 +100,8 @@ public static class SettingsScreens
             Activate = () => FilePicker.Pick("ROM Folder", null, d => { S.RomRoot = d; Save(); Shell.Window.Rescan(); }) },
         new ListItem { Glyph = "\uE8F4", Label = "Extra Game Folders", Sub = () => S.ExtraRomDirs.Count == 0 ? "None" : string.Join("   ", S.ExtraRomDirs.Select(x => x.Replace("|", ": "))),
             Activate = () => Shell.Push(ExtraFolders()) },
-        new ListItem { Glyph = "\uE710", Label = "Add a PC Game", Sub = () => "Pick its .exe", Activate = () => FilePicker.Pick("Add a PC Game", new[] { ".exe" }, f => { Shell.Library.AddManual(f); Shell.Window.Rescan(); }) },
+        new ListItem { Glyph = "\uE710", Label = "Add a PC Game", Sub = () => "Pick its .exe or a shortcut (.lnk, .url)", Activate = () => FilePicker.Pick("Add a PC Game", GameMenu.GameFileTypes, f => { Shell.Library.AddManual(f); Shell.Window.Rescan(); }) },
+        new ListItem { Glyph = "\uE719", Label = "Add a Microsoft Store App", Sub = () => "Xbox app and other Store games", Activate = () => GameMenu.PickStoreApp((name, t) => { Shell.Library.AddManual(t, name); Shell.Window.Rescan(); }) },
         new ListItem { Glyph = "\uE890", Label = "Show Hidden Games", Activate = () => Shell.Push(new LibraryScreen()) },
     });
 

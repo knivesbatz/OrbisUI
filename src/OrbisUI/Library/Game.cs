@@ -42,5 +42,8 @@ public sealed class Game
     public string? LocalArtHint { get; set; }
     public string? LocalBgHint { get; set; }
 
+    /// <summary>A non-main version picked before launch: the main game's launch overrides don't apply.</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public bool IsVersion { get; set; }
+
     public override string ToString() => $"{Platform} {Title}";
 }

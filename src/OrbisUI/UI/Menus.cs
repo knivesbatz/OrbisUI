@@ -51,7 +51,7 @@ public static class GameMenu
         if (g.Kind == LaunchKind.Steam)
             items.Add(new() { Glyph = "", Label = "Uninstall", Sub = () => "Steam will ask to confirm",
                 Activate = () => { Shell.Pop(); Steam.OpenUrl(Steam.Links.Uninstall(g.SteamAppId!)); } });
-        if (g.Kind == LaunchKind.Exe)
+        if (g.Id.StartsWith("exe:"))
             items.Add(new() { Glyph = "", Label = "Remove from Library", Activate = () => { Shell.Pop(); Shell.Confirm("Remove", $"Remove {g.Title} from the library? Files are not deleted.", () => { Shell.Library.RemoveManual(g.Id); _ = Shell.Library.RescanAsync(); }); } });
         items.Add(new() { Glyph = "", Label = "Hide from Home", Activate = () => { Shell.Pop(); AppSettings.Current.For(g.Id).Hidden = true; AppSettings.Current.Save(); Shell.Library.NotifyChanged(); } });
         Shell.Push(new ListScreen(LibraryService.DisplayTitle(g), items, dialog: true));
@@ -101,11 +101,64 @@ public static class GameMenu
         if (g.Kind is LaunchKind.Emulator or LaunchKind.Exe)
             items.Insert(1, new() { Glyph = "", Label = "Launch Arguments", Sub = () => o.Args ?? (g.Kind == LaunchKind.Emulator ? Emulators.Args(g.Platform) + "  (default)" : "None"),
                 Activate = () => Osk.Ask("Launch Arguments", o.Args ?? (g.Kind == LaunchKind.Emulator ? Emulators.Args(g.Platform) : ""), v => { o.Args = string.IsNullOrWhiteSpace(v) ? null : v; Save(); }) });
+        items.Add(new() { Glyph = "\uE8F1", Label = "Versions", Value = () => o.Versions is { Count: > 0 } v ? $"{v.Count + 1}" : "1",
+            Sub = () => "Add other exes or shortcuts; you'll choose one before the game starts", Activate = () => Shell.Push(VersionsScreen(g)) });
         items.Add(new() { Glyph = "\uE790", Label = "ReShade Preset", Value = () => o.ReShadePreset is string p ? Path.GetFileNameWithoutExtension(p) : "Default",
             Activate = () => Shell.Push(ReShadeScreen(g)) });
         if (g.Kind == LaunchKind.Emulator && o.Args != null)
             items.Add(new() { Glyph = "", Label = "Reset Launch Arguments to Default", Activate = () => { o.Args = null; Save(); } });
         return new ListScreen("Game Settings", items, subtitle: LibraryService.DisplayTitle(g));
+    }
+
+    public static readonly string[] GameFileTypes = { ".exe", ".lnk", ".url" };
+
+    /// <summary>Extra versions of a game (another exe, a shortcut or a Store app). Cross on one removes it.</summary>
+    static Screen VersionsScreen(Game g)
+    {
+        var o = AppSettings.Current.For(g.Id);
+        void Reopen() { Shell.Pop(); Shell.Push(VersionsScreen(g)); }
+        void Add(string t) { (o.Versions ??= new()).Add(t); AppSettings.Current.Save(); Reopen(); }
+        var items = new List<ListItem> { new() { Glyph = "", Label = "Main Version", Sub = () => g.Path ?? g.SteamAppId } };
+        foreach (var v in o.Versions ?? new())
+            items.Add(new() { Glyph = "", Label = VersionName(v), Sub = () => v + "   ·   Cross to remove",
+                Activate = () => Shell.Confirm("Remove Version", $"Remove {VersionName(v)}? No files are deleted.", () => { o.Versions!.Remove(v); if (o.Versions.Count == 0) o.Versions = null; AppSettings.Current.Save(); Reopen(); }) });
+        items.Add(new() { Glyph = "", Label = "Add an Exe or Shortcut…", Activate = () => FilePicker.Pick("Add a Version", GameFileTypes, Add, g.InstallDir) });
+        items.Add(new() { Glyph = "", Label = "Add a Microsoft Store App…", Activate = () => PickStoreApp((_, t) => Add(t)) });
+        return new ListScreen("Versions", items, subtitle: LibraryService.DisplayTitle(g));
+    }
+
+    public static string VersionName(string target) =>
+        target.StartsWith("shell:", StringComparison.OrdinalIgnoreCase) ? target[(target.LastIndexOf('\\') + 1)..].Split('_')[0] : Path.GetFileNameWithoutExtension(target);
+
+    /// <summary>The version picker shown before a game with extra versions starts.</summary>
+    public static void PickVersion(Game g, Action<Game> start)
+    {
+        var o = AppSettings.Current.For(g.Id);
+        var items = new List<ListItem> { new() { Glyph = "", Label = "Main Version", Sub = () => g.Path ?? g.Title, Activate = () => { Shell.Pop(); start(g); } } };
+        foreach (var v in o.Versions!)
+            items.Add(new() { Glyph = "", Label = VersionName(v), Sub = () => v, Activate = () =>
+            {
+                Shell.Pop();
+                var vg = LibraryService.FromTarget(v, g.Title);
+                vg.Id = g.Id; vg.Art = g.Art; vg.Background = g.Background; vg.BgSource = g.BgSource; vg.IsVersion = true;
+                start(vg);
+            } });
+        Audio.Sound.Play(Audio.Sfx.DialogShow);
+        Shell.Push(new ListScreen(LibraryService.DisplayTitle(g), items, dialog: true, subtitle: "Choose the version to start."));
+    }
+
+    public static void PickStoreApp(Action<string, string> chosen)
+    {
+        Shell.Toast("Microsoft Store Apps", "Loading the installed apps…", "");
+        _ = Task.Run(async () =>
+        {
+            List<(string name, string target)> apps;
+            try { apps = await LibraryService.StoreAppsAsync(); }
+            catch (Exception ex) { Shell.Window.Dispatcher.Invoke(() => Shell.Message("Microsoft Store Apps", "The app list couldn't be read: " + ex.Message)); return; }
+            Shell.Window.Dispatcher.Invoke(() => Shell.Push(new ListScreen("Add a Microsoft Store App",
+                apps.Select(a => new ListItem { Glyph = "", Label = a.name, Activate = () => { Shell.Pop(); chosen(a.name, a.target); } }),
+                subtitle: $"{apps.Count} installed apps")));
+        });
     }
 
     /// <summary>Pick the ReShade preset this game starts with. Applied to ReShade.ini right before launch (backed up first).</summary>
@@ -170,6 +223,8 @@ public sealed class FolderScreen : ListScreen
     {
         new ListItem { Glyph = "\uE768", Label = "Open", Activate = () => { Shell.Pop(); Shell.Window.StartApp(app); } },
         new ListItem { Glyph = "\uEB9F", Label = "Change Artwork", Sub = () => "SteamGridDB or an image file", Activate = () => { Shell.Pop(); Shell.Push(new ArtPickerScreen(app)); } },
+        new ListItem { Glyph = "\uE8AC", Label = "Rename", Activate = () => { Shell.Pop(); Osk.Ask("Rename", app.Name, n =>
+            { if (string.IsNullOrWhiteSpace(n)) return; app.Name = n.Trim(); AppSettings.Current.Save(); Shell.Library.NotifyChanged(); removed(); }); } },
         new ListItem { Glyph = "\uE74D", Label = $"Remove from {f.Name}", Activate = () => Shell.Confirm("Remove", $"Remove {app.Name} from {f.Name}?", () =>
             { f.Apps.Remove(app); AppSettings.Current.Save(); Shell.Pop(); removed(); }) },
     }, dialog: true);

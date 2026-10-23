@@ -25,7 +25,7 @@ public sealed class LaunchService
 
     public static (string exe, string args, string? workDir) BuildCommand(Game g, string? disc = null)
     {
-        var ovr = AppSettings.Current.Games.GetValueOrDefault(g.Id);
+        var ovr = g.IsVersion ? null : AppSettings.Current.Games.GetValueOrDefault(g.Id);
         switch (g.Kind)
         {
             case LaunchKind.Exe:
@@ -53,7 +53,7 @@ public sealed class LaunchService
         try
         {
             if (g.Kind is LaunchKind.Steam or LaunchKind.SteamShortcut) await RunViaSteam(g, ct);
-            else if (g.Kind == LaunchKind.Url) { Native.OpenShell(g.Path!); Running = null; Exited?.Invoke(g); }
+            else if (g.Kind == LaunchKind.Url) await RunShell(g, ct);
             else await RunProcess(g, disc, ct);
         }
         catch
@@ -82,6 +82,12 @@ public sealed class LaunchService
         var hwnd = await WaitForWindow(() => Pids(p, dir), ct);
         if (hwnd != IntPtr.Zero)
         {
+            // Hold the splash until the game has gone fullscreen/maximized (emulators open a small window first), at most 10 s.
+            for (int i = 0; i < 40 && !Native.CoversScreen(hwnd); i++)
+            {
+                await Task.Delay(250, ct);
+                if (Native.FindMainWindow(Pids(p, dir)) is var h2 && h2 != IntPtr.Zero) hwnd = h2;
+            }
             GameWindow = hwnd;
             await Task.Delay(g.Kind == LaunchKind.Emulator ? 1500 : 800, ct);
             Ready?.Invoke(g, hwnd);
@@ -92,6 +98,35 @@ public sealed class LaunchService
         // Some launchers start the real game and exit; follow processes from the same folder.
         if ((DateTime.UtcNow - started).TotalSeconds < 20)
             while (!ct.IsCancellationRequested && Pids(null, dir).Count > 0) await Task.Delay(2000, ct);
+        Finish(g);
+    }
+
+    /// <summary>
+    /// Shortcuts, .url files and Store apps: the shell starts them, so the game is the next large window that takes the
+    /// foreground. It's tracked until that window closes.
+    /// </summary>
+    async Task RunShell(Game g, CancellationToken ct)
+    {
+        Log.Info($"Launch (shell): {g.Path}");
+        Status?.Invoke(g, "Starting…");
+        var before = Native.GetForegroundWindow();
+        Native.OpenShell(g.Path!);
+        var deadline = DateTime.UtcNow.AddSeconds(AppSettings.Current.LaunchTimeoutSec);
+        IntPtr hwnd = IntPtr.Zero;
+        while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
+        {
+            await Task.Delay(500, ct);
+            var fg = Native.GetForegroundWindow();
+            if (fg == IntPtr.Zero || fg == before || Native.ProcessIdOf(fg) == Environment.ProcessId || !Native.GetWindowRect(fg, out var r) || r.Right - r.Left < 200) continue;
+            hwnd = fg;
+            break;
+        }
+        if (hwnd == IntPtr.Zero) { Ready?.Invoke(g, IntPtr.Zero); Finish(g); return; } // nothing to track: show home again
+        for (int i = 0; i < 40 && !Native.CoversScreen(hwnd); i++) await Task.Delay(250, ct);
+        GameWindow = hwnd;
+        await Task.Delay(800, ct);
+        Ready?.Invoke(g, hwnd);
+        while (!ct.IsCancellationRequested && Native.IsWindow(hwnd)) await Task.Delay(2000, ct);
         Finish(g);
     }
 

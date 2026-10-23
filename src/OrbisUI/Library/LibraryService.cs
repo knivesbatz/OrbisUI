@@ -97,14 +97,51 @@ public sealed class LibraryService
         catch { return new(); }
     }
 
-    public void AddManual(string exe, string? title = null)
+    /// <summary>
+    /// A PC game from an .exe, a shortcut (.lnk to an exe becomes that exe with its arguments; other .lnk and .url files open
+    /// through the shell) or a Store app ("shell:AppsFolder\AUMID").
+    /// </summary>
+    public static Game FromTarget(string target, string? title = null)
+    {
+        var g = new Game { Id = "exe:" + RomScanner.StableHash(target), Title = title ?? Path.GetFileNameWithoutExtension(target), Platform = "PC", Kind = LaunchKind.Url, Path = target };
+        var ext = Path.GetExtension(target).ToLowerInvariant();
+        string exe = target, args = "", wd = "";
+        if (ext == ".lnk")
+        {
+            try { (exe, args, wd) = Native.ReadShortcut(target); }
+            catch (Exception ex) { Log.Warn("Shortcut " + target + ": " + ex.Message); exe = ""; }
+        }
+        if (target.StartsWith("shell:", StringComparison.OrdinalIgnoreCase) || ext == ".url" || !exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) return g;
+        g.Kind = LaunchKind.Exe;
+        g.Path = exe;
+        g.Args = args.Length > 0 ? args : null;
+        g.WorkDir = wd.Length > 0 ? wd : Path.GetDirectoryName(exe);
+        g.InstallDir = Path.GetDirectoryName(exe);
+        return g;
+    }
+
+    /// <summary>Installed Microsoft Store (UWP) apps as (name, "shell:AppsFolder\AUMID"), from Windows' own Start menu list.</summary>
+    public static async Task<List<(string name, string target)>> StoreAppsAsync()
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("powershell.exe", "-NoProfile -NonInteractive -Command \"Get-StartApps | ? AppID -like '*!*' | ConvertTo-Json -Compress\"")
+            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true };
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        var json = await p.StandardOutput.ReadToEndAsync();
+        await p.WaitForExitAsync();
+        var list = new List<(string, string)>();
+        if (string.IsNullOrWhiteSpace(json)) return list;
+        using var doc = JsonDocument.Parse(json);
+        var arr = doc.RootElement.ValueKind == JsonValueKind.Array ? doc.RootElement.EnumerateArray().ToList() : new List<JsonElement> { doc.RootElement };
+        foreach (var e in arr)
+            if (e.TryGetProperty("Name", out var n) && e.TryGetProperty("AppID", out var id) && n.GetString() is string name && id.GetString() is string aumid)
+                list.Add((name, @"shell:AppsFolder\" + aumid));
+        return list.OrderBy(x => x.Item1, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public void AddManual(string target, string? title = null)
     {
         var list = LoadManual();
-        var g = new Game
-        {
-            Id = "exe:" + RomScanner.StableHash(exe), Title = title ?? Path.GetFileNameWithoutExtension(exe), Platform = "PC",
-            Kind = LaunchKind.Exe, Path = exe, WorkDir = Path.GetDirectoryName(exe), InstallDir = Path.GetDirectoryName(exe),
-        };
+        var g = FromTarget(target, title);
         list.RemoveAll(x => x.Id == g.Id);
         list.Add(g);
         AtomicFile.WriteAllText(ManualPath, JsonSerializer.Serialize(list, AppSettings.JsonOpts));

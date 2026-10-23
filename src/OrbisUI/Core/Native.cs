@@ -26,6 +26,8 @@ internal static partial class Native
     [DllImport("kernel32.dll")] public static extern IntPtr GetCurrentProcess();
     [DllImport("winmm.dll")] public static extern bool PlaySound(IntPtr pszSound, IntPtr hmod, uint fdwSound);
     [DllImport("user32.dll")] public static extern bool LockSetForegroundWindow(uint uLockCode);
+    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
 
     public const int SW_HIDE = 0, SW_SHOWNORMAL = 1, SW_MINIMIZE = 6, SW_RESTORE = 9, SW_SHOW = 5, SW_SHOWMAXIMIZED = 3;
     public const uint SND_ASYNC = 0x0001, SND_NODEFAULT = 0x0002, SND_MEMORY = 0x0004, SND_PURGE = 0x0040;
@@ -109,6 +111,29 @@ internal static partial class Native
 
     public static void OpenShell(string target, string? args = null)
     {
+        // Store (UWP) apps are started by their AppUserModelID through the Applications folder.
+        if (target.StartsWith("shell:", StringComparison.OrdinalIgnoreCase)) { Process.Start(new ProcessStartInfo("explorer.exe", target) { UseShellExecute = true }); return; }
         Process.Start(new ProcessStartInfo(target) { UseShellExecute = true, Arguments = args ?? "" });
+    }
+
+    /// <summary>True when the window fills (nearly) the whole primary screen: fullscreen or maximized without much chrome.</summary>
+    public static bool CoversScreen(IntPtr h)
+    {
+        if (h == IntPtr.Zero || !GetWindowRect(h, out var r)) return false;
+        int sw = GetSystemMetrics(0), sh = GetSystemMetrics(1);
+        return r.Right - r.Left >= sw * 0.9 && r.Bottom - r.Top >= sh * 0.85;
+    }
+
+    /// <summary>Target, arguments and working folder of a .lnk; target is empty for Store/advertised shortcuts.</summary>
+    public static (string target, string args, string workDir) ReadShortcut(string lnk)
+    {
+        var t = Type.GetTypeFromProgID("WScript.Shell") ?? throw new InvalidOperationException("Windows Script Host is unavailable.");
+        dynamic sh = Activator.CreateInstance(t)!;
+        try
+        {
+            dynamic sc = sh.CreateShortcut(lnk);
+            return ((string)sc.TargetPath ?? "", (string)sc.Arguments ?? "", (string)sc.WorkingDirectory ?? "");
+        }
+        finally { Marshal.FinalReleaseComObject(sh); }
     }
 }

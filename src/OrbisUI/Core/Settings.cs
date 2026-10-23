@@ -19,6 +19,8 @@ public sealed class GameOverride
     public string? ReShadePreset { get; set; }
     public bool? Lossless { get; set; }
     public int? LosslessDelaySec { get; set; }
+    /// <summary>Extra exes or shortcuts (.lnk, .url) offered as versions before launch.</summary>
+    public List<string>? Versions { get; set; }
 }
 
 public sealed class AppFolder

@@ -237,4 +237,19 @@ public class CoreTests
         Assert.False(EmulatorProfiles.SetIniKeys(ini, "EmuCore/GS", ("Renderer", "14")));
         Assert.NotEmpty(Directory.GetFiles(AppPaths.Backups, "emu-test-PCSX2.ini-*"));
     }
+
+    [Fact]
+    public void FromTarget_ExeShortcutUrlAndStoreApp()
+    {
+        var exe = LibraryService.FromTarget(@"C:\Games\X\x.exe");
+        Assert.Equal(LaunchKind.Exe, exe.Kind);
+        Assert.Equal(@"C:\Games\X", exe.WorkDir);
+        var url = LibraryService.FromTarget(@"C:\Users\me\Desktop\Game.url");
+        Assert.Equal(LaunchKind.Url, url.Kind);
+        Assert.Equal("Game", url.Title);
+        var store = LibraryService.FromTarget(@"shell:AppsFolder\Microsoft.Foo_8wekyb3d8bbwe!App", "Foo");
+        Assert.Equal(LaunchKind.Url, store.Kind);
+        Assert.StartsWith("exe:", store.Id);
+        Assert.Equal("Microsoft.Foo", OrbisUI.UI.GameMenu.VersionName(store.Path!));
+    }
 }
