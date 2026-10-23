@@ -55,6 +55,16 @@ public sealed class WaveBackground : Grid
             Children.Add(_video);
             _video.Play(); _video.Pause(); // shows the first frame even while animation is off
         }
+        // Royal-blue grade over the video/ribbons so the home matches the console's colour (user reference: #0A3CC4 -> #0630A8).
+        Children.Add(new Border
+        {
+            IsHitTestVisible = false, Opacity = 0.85,
+            Background = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0), EndPoint = new Point(0, 1),
+                GradientStops = { new GradientStop(UiKit.C("#0030C8"), 0), new GradientStop(UiKit.C("#0034B8"), 0.5), new GradientStop(UiKit.C("#0630A8"), 1) },
+            },
+        });
         foreach (var img in new[] { _art, _artNext })
         {
             img.Effect = null;
