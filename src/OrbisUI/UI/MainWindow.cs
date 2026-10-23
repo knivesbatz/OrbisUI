@@ -68,8 +68,8 @@ public sealed class MainWindow : Window
         Shell.Launcher.Exited += g => Dispatcher.BeginInvoke(() => OnGameExited(g));
         Shell.Launcher.Status += (g, s) => Dispatcher.BeginInvoke(() => _splashStatus.Text = s);
 
-        Activated += (_, _) => { if (Shell.Pad != null) Shell.Pad.Foreground = true; Background_.SetRunning(true); Sound.Muted = false; };
-        Deactivated += (_, _) => { if (Shell.Pad != null) Shell.Pad.Foreground = false; Background_.SetRunning(false); Sound.Muted = true; };
+        Activated += (_, _) => { if (Shell.Pad != null) Shell.Pad.Foreground = true; Background_.SetRunning(true); Sound.Muted = false; SyncMusic(); };
+        Deactivated += (_, _) => { if (Shell.Pad != null) Shell.Pad.Foreground = false; Background_.SetRunning(false); Sound.Muted = true; SyncMusic(); };
         StateChanged += (_, _) => { if (WindowState == WindowState.Minimized) Background_.SetRunning(false); };
         MouseMove += (_, _) => Cursor = null;
         SourceInitialized += (_, _) => _hwnd = new WindowInteropHelper(this).Handle;
@@ -106,7 +106,11 @@ public sealed class MainWindow : Window
         if (Environment.GetEnvironmentVariable("ORBISUI_SCRIPT") is { Length: > 0 } script) RunScript(script);
     }
 
-    public void EnterHome() => Shell.Reset(new HomeScreen());
+    bool _atHome;
+    public void EnterHome() { _atHome = true; Shell.Reset(new HomeScreen()); SyncMusic(); }
+
+    /// <summary>Home music plays only while the shell is in front at home with no game starting or running.</summary>
+    public void SyncMusic() => Sound.SetMusic(_atHome && IsActive && _splash.Visibility != Visibility.Visible && Shell.Launcher.Running == null && AppSettings.Current.HomeMusic, AppSettings.Current.MusicVolume);
 
     /// <summary>
     /// Test hook: ORBISUI_SCRIPT="wait:3000;Up;shot:fn;Cross" drives the UI with button presses and saves screenshots of the
@@ -282,6 +286,7 @@ public sealed class MainWindow : Window
         HideSplash();
         RestoreShell();
         Sound.Play(Sfx.GameQuit);
+        SyncMusic();
         Shell.Library.Sort();
         Shell.Library.NotifyChanged();
     }
@@ -374,6 +379,7 @@ public sealed class MainWindow : Window
         Background_.SetArt(g.BgSource == "SteamGridDB" ? g.Background : null);
         _splash.Visibility = Visibility.Visible;
         _splash.Opacity = 0;
+        SyncMusic();
         var art = (FrameworkElement)((StackPanel)_splash.Children[0]).Children[0];
         art.RenderTransformOrigin = new Point(0.5, 0.5);
         var st = new ScaleTransform(0.86, 0.86);
@@ -390,7 +396,7 @@ public sealed class MainWindow : Window
     {
         if (_splash.Visibility != Visibility.Visible) return;
         ((RotateTransform)_spinner.RenderTransform).BeginAnimation(RotateTransform.AngleProperty, null);
-        UiKit.Animate(_splash, OpacityProperty, 0, 200, () => _splash.Visibility = Visibility.Collapsed);
+        UiKit.Animate(_splash, OpacityProperty, 0, 200, () => { _splash.Visibility = Visibility.Collapsed; SyncMusic(); });
     }
 
     // ---------------- toasts (top-left, like console notifications) ----------------

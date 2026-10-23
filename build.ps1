@@ -41,7 +41,14 @@ Write-Host "Package: $zip ($hash)"
 
 if ($Personal) {
     $p = Join-Path $PSScriptRoot 'out\OrbisUI-personal'
-    if (Test-Path $p) { Remove-Item $p -Recurse -Force }
+    # You run the personal build from out\OrbisUI-personal, so keep its settings, art cache, logs and backups across rebuilds.
+    $keep = Join-Path $PSScriptRoot 'out\personal-state'
+    if (Get-Process OrbisUI -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$p\*" }) { throw 'Close OrbisUI (personal build) before rebuilding it.' }
+    if (Test-Path $p) {
+        New-Item -ItemType Directory -Force $keep | Out-Null
+        foreach ($d in 'Config','Cache','Logs','Backups','Downloads') { if (Test-Path "$p\$d") { Move-Item "$p\$d" $keep -Force } }
+        Remove-Item $p -Recurse -Force
+    }
     Copy-Item $out $p -Recurse
     $sounds = '..\UI Sounds'; $icons = '..\source code refrences\OrbisPro-main\OrbisPro\Icons'
     New-Item -ItemType Directory -Force "$p\Data\Sounds", "$p\Data\Icons" | Out-Null
@@ -50,8 +57,15 @@ if ($Personal) {
         Get-ChildItem $sounds -Filter '*Startup*.mp3' | Select-Object -First 1 | Copy-Item -Destination "$p\Data\Sounds\startup.mp3"
     }
     if (Test-Path $icons) { Copy-Item "$icons\*.png" "$p\Data\Icons" }
+    # Boot video, live background and home music the user supplied in ..\orbis
+    $media = '..\orbis'; New-Item -ItemType Directory -Force "$p\Data\Media" | Out-Null
+    foreach ($m in @(@('splash.mp4','boot.mp4'), @('PS4Background.mp4','background.mp4'), @('Ambience.mp3','music.mp3'))) {
+        if (Test-Path "$media\$($m[0])") { Copy-Item "$media\$($m[0])" "$p\Data\Media\$($m[1])" }
+    }
     $pz = "dist\OrbisUI-$ver-personal-win-x64.zip"
     if (Test-Path $pz) { Remove-Item $pz }
     Compress-Archive -Path "$p\*" -DestinationPath $pz -CompressionLevel Optimal
     Write-Host "Personal package (do not upload): $pz"
+    # Restored after zipping so your settings and keys never end up in the package.
+    if (Test-Path $keep) { Get-ChildItem $keep | Move-Item -Destination $p -Force; Remove-Item $keep -Recurse -Force }
 }

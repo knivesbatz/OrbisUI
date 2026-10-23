@@ -18,13 +18,15 @@ public sealed class BootScreen : Screen
     readonly Grid _intro = new() { Background = Brushes.Black };
     readonly Grid _login = new() { Opacity = 0 };
     bool _atLogin, _finished;
+    MediaElement? _video;
 
     public BootScreen(Action done)
     {
         _done = done;
         Children.Add(_login);
         Children.Add(_intro);
-        BuildIntro();
+        if (Core.AppPaths.MediaFile("boot.mp4") is string boot) BuildVideo(boot);
+        else BuildIntro();
         BuildLogin();
     }
 
@@ -69,6 +71,19 @@ public sealed class BootScreen : Screen
         };
     }
 
+    /// <summary>User-supplied boot video (Data\Media\boot.mp4). It ends on its own "press the PS button" frame and waits there.</summary>
+    void BuildVideo(string file)
+    {
+        _video = new MediaElement
+        {
+            Source = new Uri(file), LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Manual,
+            Stretch = Stretch.UniformToFill, Volume = Sound.EffectiveVolume,
+        };
+        _video.MediaFailed += (_, _) => ShowLogin();
+        _intro.Children.Add(_video);
+        Loaded += (_, _) => _video.Play();
+    }
+
     void BuildLogin()
     {
         var steam = Steam.FindInstall();
@@ -103,7 +118,7 @@ public sealed class BootScreen : Screen
     {
         if (_atLogin || _finished) return;
         _atLogin = true;
-        UiKit.Animate(_intro, OpacityProperty, 0, 700, () => _intro.Visibility = Visibility.Collapsed);
+        UiKit.Animate(_intro, OpacityProperty, 0, 700, () => { _intro.Visibility = Visibility.Collapsed; _video?.Close(); });
         UiKit.Animate(_login, OpacityProperty, 1, 700);
     }
 

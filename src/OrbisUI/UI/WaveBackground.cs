@@ -20,6 +20,7 @@ public sealed class WaveBackground : Grid
     readonly Image _art = new() { Stretch = Stretch.UniformToFill, Opacity = 0 };
     readonly Image _artNext = new() { Stretch = Stretch.UniformToFill, Opacity = 0 };
     readonly List<(UIElement el, TranslateTransform t, double dx, double dy, double secs)> _ribbons = new();
+    readonly MediaElement? _video;
     bool _running;
 
     public WaveBackground()
@@ -40,6 +41,20 @@ public sealed class WaveBackground : Grid
         AddRibbon("M-300,260 C 300,520 820,40 1320,320 S 2000,520 2300,300 L 2300,360 C 1900,600 1500,420 1180,420 S 360,520 -300,360 Z", "#2490C8FF", -140, 40, 34);
         AddRibbon("M-300,640 C 400,380 900,860 1400,520 S 2100,300 2300,420 L 2300,450 C 1900,350 1500,640 1300,640 S 500,500 -300,700 Z", "#3FD8F0FF", 120, -50, 22);
         AddRibbon("M-300,1000 C 500,880 1000,1100 1500,900 S 2100,800 2300,880 L 2300,1180 L -300,1180 Z", "#200A1A60", -80, 20, 40);
+        // A user-supplied live background (Data\Media\background.mp4) replaces the drawn ribbons; decoded on the GPU.
+        if (AppPaths.MediaFile("background.mp4") is string bg)
+        {
+            _video = new MediaElement
+            {
+                Source = new Uri(bg), LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Manual,
+                IsMuted = true, Stretch = Stretch.UniformToFill, Width = UiKit.W, Height = UiKit.H, ScrubbingEnabled = true,
+            };
+            _video.MediaEnded += (_, _) => { _video.Position = TimeSpan.Zero; _video.Play(); };
+            _video.MediaFailed += (_, e) => { Log.Warn("background video: " + e.ErrorException?.Message); _video.Visibility = Visibility.Collapsed; _waves.Visibility = Visibility.Visible; };
+            _waves.Visibility = Visibility.Collapsed;
+            Children.Add(_video);
+            _video.Play(); _video.Pause(); // shows the first frame even while animation is off
+        }
         foreach (var img in new[] { _art, _artNext })
         {
             img.Effect = null;
@@ -69,6 +84,7 @@ public sealed class WaveBackground : Grid
         run &= AppSettings.Current.AnimatedBackground && UiKit.Motion;
         if (run == _running) return;
         _running = run;
+        if (_video != null) { if (run) _video.Play(); else _video.Pause(); return; }
         foreach (var (_, t, dx, dy, secs) in _ribbons)
         {
             if (!run)

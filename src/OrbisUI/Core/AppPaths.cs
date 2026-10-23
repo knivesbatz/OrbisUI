@@ -27,6 +27,9 @@ public static class AppPaths
     public static string ArtOriginals => Dir(Path.Combine("Cache", "Art", "Originals"));
     public static string Logs => Dir("Logs");
     public static string Sounds => Dir(Path.Combine("Data", "Sounds"));
+    public static string Media => Dir(Path.Combine("Data", "Media"));
+    /// <summary>Optional user-supplied media (boot.mp4, background.mp4, music.mp3); null when absent.</summary>
+    public static string? MediaFile(string name) => File.Exists(Path.Combine(Media, name)) ? Path.Combine(Media, name) : null;
     public static string Downloads => Dir("Downloads");
     public static string Backups => Dir("Backups");
     public static string DefaultGames => Dir("Games");

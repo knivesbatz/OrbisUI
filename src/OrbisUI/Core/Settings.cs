@@ -70,6 +70,8 @@ public sealed class AppSettings
     public bool AnimatedBackground { get; set; } = true;
     public bool UiSounds { get; set; } = true;
     public double UiVolume { get; set; } = 0.7;
+    public bool HomeMusic { get; set; } = true;
+    public double MusicVolume { get; set; } = 0.4;
     public bool ConfirmWithCircle { get; set; }
 
     // Steam

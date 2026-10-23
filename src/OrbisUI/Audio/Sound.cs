@@ -97,6 +97,30 @@ public static class Sound
 
     public static void StopFile() { _music?.Stop(); _music?.Close(); }
 
+    /// <summary>UI volume after the on/off switch and focus mute, for media that plays its own audio (the boot video).</summary>
+    public static double EffectiveVolume => _enabled && !Muted ? _volume : 0;
+
+    static MediaPlayer? _bgm;
+    static bool _bgmOn;
+
+    /// <summary>Home screen music (Data\Media\music.mp3), looped. Pausing keeps the position so it resumes where it left off.</summary>
+    public static void SetMusic(bool play, double volume)
+    {
+        if (_bgm != null) _bgm.Volume = volume;
+        if (play == _bgmOn) return;
+        _bgmOn = play;
+        if (!play) { _bgm?.Pause(); return; }
+        if (_bgm == null)
+        {
+            if (AppPaths.MediaFile("music.mp3") is not string f) return;
+            _bgm = new MediaPlayer { Volume = volume };
+            _bgm.MediaEnded += (_, _) => { _bgm.Position = TimeSpan.Zero; _bgm.Play(); };
+            _bgm.MediaFailed += (_, e) => Log.Warn("home music: " + e.ErrorException?.Message);
+            _bgm.Open(new Uri(f));
+        }
+        _bgm.Play();
+    }
+
     /// <summary>Scale 16-bit PCM samples in a RIFF/WAVE buffer (and repair its header). Other formats are returned unchanged.</summary>
     internal static byte[] Scale(byte[] wav, double vol)
     {
