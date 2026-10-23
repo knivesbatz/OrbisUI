@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1 (2026-10-23)
+- Home screen matches the console: status bar with PS Plus, notifications, friends, your Steam avatar and name, trophies and the clock; the game row sits right under it with the console's tile sizes, and the selected game's title sits beside its Start bar. Up slides the row down and shows the function icons.
+
 ## 0.2.0 (2026-10-23)
 - Fixed: UI sounds were silent with the PS4 sound pack (its WAV headers declare a block align Windows rejects; repaired on load).
 - Live video background, boot video and home music: drop background.mp4, boot.mp4 and music.mp3 into Data\Media. The boot video fades into the home screen; the PS button skips it. Music pauses whenever a game or app is in front. New Home Music and Music Volume settings.
