@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 (2026-10-23)
+- Fixed: UI sounds were silent with the PS4 sound pack (its WAV headers declare a block align Windows rejects; repaired on load).
+- Live video background, boot video and home music: drop background.mp4, boot.mp4 and music.mp3 into Data\Media. The boot video fades into the home screen; the PS button skips it. Music pauses whenever a game or app is in front. New Home Music and Music Volume settings.
+- Display settings inside the UI: resolution, refresh rate and brightness, with a 15 second revert timer.
+- PRO Mode Active notification over the game once Lossless Scaling is confirmed scaling.
+- TV & Video: websites can no longer be added; change any app's art from SteamGridDB or an image file.
+- SteamGridDB is the default art source and is retried after offline starts.
+- PS1 and PS2 games fast boot (no BIOS intro); shadPS4's splash is turned off (config backed up first).
+- Personal builds keep your settings and art cache when rebuilt.
 ## 0.1.0 (2026-10-23)
 First portable build.
 - PS4-style home: square tiles, enlarged focus tile, top function bar with Store, Notifications, Friends, Messages, Profile, Trophies, Settings and Power, user and clock.
