@@ -18,20 +18,21 @@ namespace OrbisUI.UI;
 /// </summary>
 public sealed class HomeScreen : Screen
 {
-    // Geometry measured from the reference walkthrough (1920x1080).
-    const double FnCell = 104, FnY = 26;
-    const double RowY = 186, Small = 210, Big = 360, Gap = 12, FocusX = 330, SmallY = 225;
+    // Geometry measured from the reference walkthrough and the user's screenshot (1920x1080).
+    const double FnCell = 104, FnY = 500, BarY = 119, FnShift = 640;
+    const double RowY = 232, Small = 202, Big = 346, Gap = 6, FocusX = 269, SmallY = 238, StartH = 81;
 
     readonly Canvas _row = new() { Width = UiKit.W, Height = 700 };
     readonly TranslateTransform _rowShift = new();
     readonly Dictionary<int, (FrameworkElement el, TranslateTransform t, ScaleTransform s)> _tiles = new();
-    readonly TextBlock _title = UiKit.Label("", 46);
+    readonly TextBlock _title = UiKit.Label("", 54);
     readonly TextBlock _sub = UiKit.Label("", 24, UiKit.Dim);
     readonly TextBlock _desc = new() { FontSize = 22, Foreground = UiKit.Dim, FontFamily = UiKit.Font, TextWrapping = TextWrapping.Wrap, MaxHeight = 92, TextTrimming = TextTrimming.WordEllipsis, Width = 980 };
     readonly Border _startBar = new();
     readonly TextBlock _startText = UiKit.Label("Start", 26);
     readonly Border _focus = UiKit.FocusFrame(3);
-    readonly Grid _info = new();
+    readonly Canvas _info = new() { Width = UiKit.W, Height = 200, IsHitTestVisible = false };
+    readonly Canvas _statusIcons = new();
     readonly TextBlock _clock = UiKit.Label("", 26);
     readonly TextBlock _user = UiKit.Label("", 24);
     readonly Image _avatar = new() { Width = 40, Height = 40 };
@@ -58,26 +59,31 @@ public sealed class HomeScreen : Screen
     public HomeScreen()
     {
         _row.RenderTransform = _rowShift;
+        _row.VerticalAlignment = VerticalAlignment.Top; // row coordinates are screen coordinates
         Children.Add(_row);
         _row.Children.Add(_startBar);
         _row.Children.Add(_focus);
 
+        // Darker band behind the content row across the whole width, like the console.
+        var band = new Border { Width = UiKit.W, Height = Small, Background = UiKit.B("#26000A40") };
+        Canvas.SetTop(band, SmallY);
+        _row.Children.Add(band);
         // Start strip under the focused tile.
-        _startBar.Width = Big; _startBar.Height = 58;
-        _startBar.Background = UiKit.B("#C0061A55");
+        _startBar.Width = Big; _startBar.Height = StartH;
+        _startBar.Background = UiKit.B("#E02358C8");
         _startText.HorizontalAlignment = HorizontalAlignment.Center; _startText.VerticalAlignment = VerticalAlignment.Center;
         _startBar.Child = _startText;
         Canvas.SetLeft(_startBar, FocusX); Canvas.SetTop(_startBar, RowY + Big);
-        _focus.Width = Big + 6; _focus.Height = Big + 58 + 6;
+        _focus.Width = Big + 6; _focus.Height = Big + StartH + 6;
         Canvas.SetLeft(_focus, FocusX - 3); Canvas.SetTop(_focus, RowY - 3);
 
-        var titleBlock = new StackPanel { Margin = new Thickness(FocusX + Big + 34, 0, 0, 0) };
+        var titleBlock = new StackPanel { Margin = new Thickness(FocusX + Big + 19, 0, 0, 0) };
         _title.MaxWidth = 1100;
         titleBlock.Children.Add(_title);
         titleBlock.Children.Add(_sub);
         _desc.Margin = new Thickness(0, 14, 0, 0);
         titleBlock.Children.Add(_desc);
-        Canvas.SetTop(titleBlock, RowY + Big - 10);
+        Canvas.SetTop(titleBlock, RowY + Big + StartH - 72); // the title's baseline sits on the Start bar
         Canvas.SetLeft(titleBlock, 0);
         _row.Children.Add(titleBlock);
 
@@ -109,26 +115,35 @@ public sealed class HomeScreen : Screen
 
     void BuildInfoBar()
     {
-        _info.Margin = new Thickness(0, 46, 0, 0);
+        // The console's status bar: PS Plus, notifications, friends, you (online dot, avatar, name), trophies, clock.
         _info.VerticalAlignment = VerticalAlignment.Top;
-        _info.Height = 50;
-        var left = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(FocusX, 0, 0, 0) };
-        left.Children.Add(IconPack.Get("notifications") is ImageSource ni ? new Image { Source = ni, Width = 34, Height = 34 } : UiKit.Glyph("\uEA8F", 26));
-        _noticeCount.Margin = new Thickness(6, -14, 0, 0);
-        left.Children.Add(_noticeCount);
-        left.Visibility = Visibility.Collapsed; // the function bar already shows Notifications
-        _info.Children.Add(left);
+        _info.HorizontalAlignment = HorizontalAlignment.Left;
+        void At(UIElement el, double x, double h)
+        {
+            Canvas.SetLeft(el, x); Canvas.SetTop(el, BarY - h / 2);
+            _statusIcons.Children.Add(el);
+        }
+        UIElement Icon(string key, string glyph, double size) =>
+            IconPack.Get(key) is ImageSource img ? new Image { Source = img, Width = size, Height = size } : UiKit.Glyph(glyph, size * 0.8);
 
-        var right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 120, 0) };
-        _avatar.Margin = new Thickness(0, 0, 12, 0);
-        _avatar.Clip = new RectangleGeometry(new Rect(0, 0, 40, 40), 4, 4);
-        right.Children.Add(_avatar);
+        // Yellow plus, drawn (the PS Plus mark).
+        At(new Path { Data = Geometry.Parse("M10,0 H22 V10 H32 V22 H22 V32 H10 V22 H0 V10 H10 Z"), Fill = UiKit.B("#F5C518"), Width = 30, Height = 30, Stretch = Stretch.Uniform }, 96, 30);
+        At(Icon("notifications", "\uEA8F", 34), 192, 34);
+        _noticeCount.Foreground = UiKit.Text;
+        At(_noticeCount, 230, 46);
+        At(Icon("friends", "\uE716", 36), 730, 36);
+        At(new System.Windows.Shapes.Ellipse { Width = 10, Height = 10, Fill = UiKit.B("#3FA9FF") }, 800, 10);
+        _avatar.Clip = new RectangleGeometry(new Rect(0, 0, 40, 40), 3, 3);
+        At(_avatar, 818, 40);
         _user.VerticalAlignment = VerticalAlignment.Center;
-        _user.Margin = new Thickness(0, 0, 60, 0);
-        right.Children.Add(_user);
-        _clock.VerticalAlignment = VerticalAlignment.Center;
-        right.Children.Add(_clock);
-        _info.Children.Add(right);
+        At(_user, 870, 34);
+        At(Icon("trophies", "\uE734", 36), 1306, 36);
+        _info.Children.Add(_statusIcons);
+        // Right-aligned so the clock ends at 95% of the width whatever the time is.
+        var clockBox = new Border { Width = 300, Child = _clock };
+        _clock.HorizontalAlignment = HorizontalAlignment.Right;
+        Canvas.SetLeft(clockBox, UiKit.W * 0.95 - 300); Canvas.SetTop(clockBox, BarY - 18);
+        _info.Children.Add(clockBox);
         Children.Add(_info);
         LoadUser();
     }
@@ -169,6 +184,7 @@ public sealed class HomeScreen : Screen
         }
         _fnBar.VerticalAlignment = VerticalAlignment.Top;
         _fnBar.Margin = new Thickness(0, FnY, 0, 0);
+        _fnBar.Opacity = 0; // shown when Up moves into the function area
         _fnLayer.Children.Add(_fnBar);
         _fnFocus.Width = FnCell; _fnFocus.Height = 84; _fnFocus.Visibility = Visibility.Hidden; _fnLabel.Visibility = Visibility.Hidden;
         _fnFocus.HorizontalAlignment = HorizontalAlignment.Left; _fnFocus.VerticalAlignment = VerticalAlignment.Top;
@@ -230,7 +246,7 @@ public sealed class HomeScreen : Screen
 
     double TargetX(int i) => i == _sel ? FocusX
         : i < _sel ? FocusX - (_sel - i) * (Small + Gap)
-        : FocusX + Big + Gap + 3 + (i - _sel - 1) * (Small + Gap);
+        : FocusX + (_fnMode ? Small : Big + 3) + Gap + (i - _sel - 1) * (Small + Gap);
 
     void Layout(bool animate)
     {
@@ -243,7 +259,7 @@ public sealed class HomeScreen : Screen
         }
         for (int i = lo; i <= hi; i++)
         {
-            bool isSel = i == _sel;
+            bool isSel = i == _sel && !_fnMode;
             double x = TargetX(i), y = isSel ? RowY : SmallY, sc = isSel ? Big / Small : 1;
             if (!_tiles.TryGetValue(i, out var t))
             {
@@ -410,8 +426,12 @@ public sealed class HomeScreen : Screen
         if (_fnMode == on) return;
         _fnMode = on;
         Play(on ? Sfx.Enter : Sfx.Back);
-        // The function icons always sit in the top bar (later console firmware); Up moves focus there and dims the row.
-        UiKit.Animate(_row, OpacityProperty, on ? 0.45 : 1, 200);
+        // Like the console: the status icons give way to the function row and the content row slides to the bottom, all small.
+        UiKit.Animate(_rowShift, TranslateTransform.YProperty, on ? FnShift : 0, 220);
+        UiKit.Animate(_row, OpacityProperty, on ? 0.7 : 1, 200);
+        UiKit.Animate(_fnBar, OpacityProperty, on ? 1 : 0, 200);
+        UiKit.Animate(_statusIcons, OpacityProperty, on ? 0 : 1, 200);
+        Layout(true);
         _fnFocus.Visibility = _fnLabel.Visibility = on ? Visibility.Visible : Visibility.Hidden;
         _focus.Visibility = on ? Visibility.Hidden : Visibility.Visible;
         _startBar.Visibility = _focus.Visibility;
