@@ -12,6 +12,7 @@ public static class EmulatorProfiles
     {
         try { EnsureDuckStation(); } catch (Exception ex) { Log.Warn("DuckStation profile: " + ex.Message); }
         try { EnsurePcsx2QuietOsd(); } catch (Exception ex) { Log.Warn("PCSX2 profile: " + ex.Message); }
+        try { EnsureShadPs4NoSplash(); } catch (Exception ex) { Log.Warn("shadPS4 profile: " + ex.Message); }
     }
 
     static string Backup(string file)
@@ -157,5 +158,23 @@ public static class EmulatorProfiles
         else text += "\r\n[EmuCore/GS]\r\nOsdMessagesPos = 0\r\n";
         AtomicFile.WriteAllText(ini, text);
         Log.Info("PCSX2 on-screen messages turned off: " + ini);
+    }
+
+    /// <summary>shadPS4 shows the game's splash image before booting; turn it off (config.json in newer builds, config.toml in older ones). Backed up first.</summary>
+    public static void EnsureShadPs4NoSplash()
+    {
+        var exe = Emulators.ExePath("PS4");
+        var dirs = new[] { exe != null ? Path.Combine(Path.GetDirectoryName(exe)!, "user") : null, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "shadPS4") };
+        foreach (var dir in dirs.OfType<string>())
+            foreach (var (name, on, off) in new[] { ("config.json", "\"show_splash\": true", "\"show_splash\": false"), ("config.toml", "showSplash = true", "showSplash = false") })
+            {
+                var file = Path.Combine(dir, name);
+                if (!File.Exists(file)) continue;
+                var text = File.ReadAllText(file);
+                if (!text.Contains(on)) continue;
+                Log.Info("shadPS4 config backed up to " + Backup(file));
+                AtomicFile.WriteAllText(file, text.Replace(on, off));
+                Log.Info("shadPS4 splash turned off: " + file);
+            }
     }
 }

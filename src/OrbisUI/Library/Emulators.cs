@@ -15,12 +15,12 @@ public static class Emulators
 {
     public static readonly EmulatorDef[] All =
     {
-        // DuckStation: -batch exits with the game, -nogui hides the main window.
+        // DuckStation: -batch exits with the game, -nogui hides the main window, -fastboot skips the BIOS intro.
         new("PS1", "DuckStation", new[] { "duckstation-qt*.exe", "duckstation*.exe" },
-            "-batch -nogui -fullscreen -- \"{rom}\"", new[] { ".cue", ".chd", ".pbp", ".m3u", ".ecm", ".bin", ".img" }, new[] { "PS1", "PSX", "PSONE" }),
-        // PCSX2: -bigpicture makes the pause menu controller-friendly, OSD is configured in PCSX2.ini.
+            "-batch -nogui -fullscreen -fastboot -- \"{rom}\"", new[] { ".cue", ".chd", ".pbp", ".m3u", ".ecm", ".bin", ".img" }, new[] { "PS1", "PSX", "PSONE" }),
+        // PCSX2: -bigpicture makes the pause menu controller-friendly, -fastboot skips the BIOS, OSD is configured in PCSX2.ini.
         new("PS2", "PCSX2", new[] { "pcsx2-qt.exe", "pcsx2*.exe" },
-            "-batch -nogui -fullscreen -bigpicture -- \"{rom}\"", new[] { ".iso", ".chd", ".cso", ".zso", ".gz", ".cue", ".bin", ".elf" }, new[] { "PS2" }),
+            "-batch -nogui -fullscreen -bigpicture -fastboot -- \"{rom}\"", new[] { ".iso", ".chd", ".cso", ".zso", ".gz", ".cue", ".bin", ".elf" }, new[] { "PS2" }),
         new("PS3", "RPCS3", new[] { "rpcs3.exe" },
             "--no-gui --fullscreen \"{rom}\"", new[] { ".iso" }, new[] { "PS3" }),
         new("PS4", "shadPS4", new[] { "shadPS4.exe" },
