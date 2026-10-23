@@ -57,6 +57,7 @@ if ($Personal) {
         Get-ChildItem $sounds -Filter '*Startup*.mp3' | Select-Object -First 1 | Copy-Item -Destination "$p\Data\Sounds\startup.mp3"
     }
     if (Test-Path $icons) { Copy-Item "$icons\*.png" "$p\Data\Icons" }
+    foreach ($i in '..\store.png', '..\whats new.png', '..\web browser.png') { if (Test-Path $i) { Copy-Item $i "$p\Data\Icons" } }
     # Boot video, live background and home music the user supplied in ..\orbis
     $media = '..\orbis'; New-Item -ItemType Directory -Force "$p\Data\Media" | Out-Null
     foreach ($m in @(@('splash.mp4','boot.mp4'), @('PS4Background.mp4','background.mp4'), @('Ambience.mp3','music.mp3'))) {

@@ -210,12 +210,19 @@ public sealed class HomeScreen : Screen
     public void Reload()
     {
         var keepId = _items.Count > 0 ? _items[_sel].Id : AppSettings.Current.LastSelectedId;
-        var list = Shell.Library.Visible.Select(g => new HomeItem { Kind = HomeKind.Game, Game = g, Title = LibraryService.DisplayTitle(g) }).ToList();
+        // Like the console: PlayStation Store and What's New lead the row, then games, folders and the library.
+        var list = new List<HomeItem>
+        {
+            new() { Kind = HomeKind.Store, Title = "PlayStation Store", Glyph = "\uE719", IconKey = "storetile" },
+            new() { Kind = HomeKind.WhatsNew, Title = "What's New", Glyph = "\uE789", IconKey = "whatsnew" },
+        };
+        list.AddRange(Shell.Library.Visible.Select(g => new HomeItem { Kind = HomeKind.Game, Game = g, Title = LibraryService.DisplayTitle(g) }));
         foreach (var f in AppSettings.Current.Folders)
             list.Add(new HomeItem { Kind = HomeKind.Folder, Folder = f, Title = f.Name, Glyph = "", IconKey = "tv" });
         list.Add(new HomeItem { Kind = HomeKind.Library, Title = "Library", Glyph = "", IconKey = "library" });
         _items = list;
-        int idx = keepId == null ? 0 : _items.FindIndex(i => i.Id == keepId);
+        int idx = keepId == null ? -1 : _items.FindIndex(i => i.Id == keepId);
+        if (idx < 0) idx = Math.Max(0, _items.FindIndex(i => i.Kind == HomeKind.Game));
         _sel = Math.Clamp(idx < 0 ? 0 : idx, 0, _items.Count - 1);
         foreach (var t in _tiles.Values) _row.Children.Remove(t.el);
         _tiles.Clear();
@@ -303,6 +310,8 @@ public sealed class HomeScreen : Screen
             {
                 HomeKind.Folder => $"{it.Folder!.Apps.Count} items",
                 HomeKind.Library => $"{Shell.Library.Games.Count} games and apps",
+                HomeKind.Store => "Opens the Steam store",
+                HomeKind.WhatsNew => Notifications.Items.Count > 0 ? Notifications.Items[0].Title : "Notifications and updates",
                 _ => "",
             };
             _desc.Text = "";
@@ -499,6 +508,8 @@ public sealed class HomeScreen : Screen
             case HomeKind.Game: Shell.Window.StartGame(it.Game!); break;
             case HomeKind.Folder when it.Folder!.Apps.Count > 0: _subSel = 0; Play(Sfx.Cursor); PlaceSub(); break;
             case HomeKind.Library: Play(Sfx.Enter); Shell.Push(new LibraryScreen()); break;
+            case HomeKind.Store: Play(Sfx.Decide); SteamHandoff(Steam.Links.Store, "PlayStation Store"); break;
+            case HomeKind.WhatsNew: Play(Sfx.Enter); Shell.Push(new NotificationsScreen()); break;
         }
     }
 
