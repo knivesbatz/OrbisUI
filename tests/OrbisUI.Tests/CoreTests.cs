@@ -125,6 +125,16 @@ public class CoreTests
     }
 
     [Fact]
+    public void Sound_RepairsBadBlockAlign()
+    {
+        var wav = Sound.Synth(Sfx.Cursor);
+        wav[32] = 16; // what the PS4 pack ships
+        var fixedWav = Sound.Scale(wav, 1);
+        Assert.Equal(2, BitConverter.ToUInt16(fixedWav, 32));
+        Assert.Equal(44100 * 2, BitConverter.ToInt32(fixedWav, 28));
+    }
+
+    [Fact]
     public void ImageTools_MakesSquareTilesFromPortraitArt()
     {
         var px = new byte[60 * 90 * 4];

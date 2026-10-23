@@ -97,7 +97,7 @@ public static class Sound
 
     public static void StopFile() { _music?.Stop(); _music?.Close(); }
 
-    /// <summary>Scale 16-bit PCM samples in a RIFF/WAVE buffer. Other formats are returned unchanged.</summary>
+    /// <summary>Scale 16-bit PCM samples in a RIFF/WAVE buffer (and repair its header). Other formats are returned unchanged.</summary>
     internal static byte[] Scale(byte[] wav, double vol)
     {
         var copy = (byte[])wav.Clone();
@@ -122,7 +122,13 @@ public static class Sound
             string id = System.Text.Encoding.ASCII.GetString(b, p, 4);
             int len = BitConverter.ToInt32(b, p + 4);
             if (len < 0) return false;
-            if (id == "fmt ") pcm16 = BitConverter.ToUInt16(b, p + 8) == 1 && BitConverter.ToUInt16(b, p + 22) == 16;
+            if (id == "fmt ")
+            {
+                pcm16 = BitConverter.ToUInt16(b, p + 8) == 1 && BitConverter.ToUInt16(b, p + 22) == 16;
+                // The PS4 pack's WAVs declare block align 16 instead of 2, which winmm refuses to play; repair it in place.
+                int ch = BitConverter.ToUInt16(b, p + 10), rate = BitConverter.ToInt32(b, p + 12);
+                if (pcm16 && ch > 0) { BitConverter.TryWriteBytes(b.AsSpan(p + 20, 2), (ushort)(ch * 2)); BitConverter.TryWriteBytes(b.AsSpan(p + 16, 4), rate * ch * 2); }
+            }
             else if (id == "data") { dataOff = p + 8; dataLen = Math.Min(len, b.Length - dataOff); return pcm16; }
             p += 8 + len + (len & 1);
         }
