@@ -16,6 +16,7 @@ public static class EmulatorProfiles
         try { EnsureStarter("PSP", Path.Combine("memstick", "PSP", "SYSTEM", "ppsspp.ini"), PpssppIni); } catch (Exception ex) { Log.Warn("PPSSPP profile: " + ex.Message); }
         try { EnsureStarter("PS3", Path.Combine("config", "config.yml"), Rpcs3Yml); } catch (Exception ex) { Log.Warn("RPCS3 profile: " + ex.Message); }
         try { EnsureStarter("VITA", "config.yml", Vita3kYml); } catch (Exception ex) { Log.Warn("Vita3K profile: " + ex.Message); }
+        try { Services.ReShade.EnsureEmulators(); } catch (Exception ex) { Log.Warn("ReShade for emulators: " + ex.Message); }
     }
 
     /// <summary>

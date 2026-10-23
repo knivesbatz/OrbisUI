@@ -162,6 +162,65 @@ public static class ReShade
         Log.Info($"ReShade.ini restored from {backup}");
     }
 
+    // ---------------- Emulators (Vulkan) ----------------
+    // Every emulator renders with Vulkan, where ReShade hooks in through its Vulkan layer. The layer is installed once by
+    // ReShade's own setup (registered under Khronos\Vulkan\ImplicitLayers, files in ProgramData\ReShade) and only activates
+    // for an exe that has a ReShade.ini next to it (ReShade's loading check), so a ReShade.ini is all an emulator needs.
+    static string LayerDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ReShade");
+    public static bool VulkanLayerInstalled => File.Exists(Path.Combine(LayerDir, "ReShade64.json"));
+
+    /// <summary>A ReShade.ini with its reshade-shaders folder, to copy settings and shader paths from (yours, near the emulators).</summary>
+    static string? FindTemplate()
+    {
+        var opts = new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2, IgnoreInaccessible = true };
+        foreach (var root in Emulators.SearchRoots().Prepend(Path.Combine(AppPaths.Root, "Data", "ReShade")).Where(Directory.Exists))
+        {
+            try
+            {
+                var hit = Directory.EnumerateFiles(root, "ReShade.ini", opts).FirstOrDefault(f => Directory.Exists(Path.Combine(Path.GetDirectoryName(f)!, "reshade-shaders")));
+                if (hit != null) return hit;
+            }
+            catch { }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Enable ReShade for every configured emulator: give it a ReShade.ini based on yours, with absolute shader paths, the FPS
+    /// counter and clock off and performance mode on. Existing ReShade.ini files are never replaced (only new files are written).
+    /// Returns the emulators that have ReShade.
+    /// </summary>
+    public static List<string> EnsureEmulators()
+    {
+        var done = new List<string>();
+        if (!VulkanLayerInstalled) return done;
+        var template = FindTemplate();
+        foreach (var def in Emulators.All)
+        {
+            if (Emulators.ExePath(def.System) is not string exe) continue;
+            var ini = Path.Combine(Path.GetDirectoryName(exe)!, "ReShade.ini");
+            if (!File.Exists(ini) && template != null)
+            {
+                var tdir = Path.GetDirectoryName(template)!;
+                var lines = File.ReadAllLines(template).Select(l =>
+                    l.StartsWith("EffectSearchPaths=", StringComparison.OrdinalIgnoreCase) ? "EffectSearchPaths=" + Path.Combine(tdir, "reshade-shaders", "Shaders") + "\\**"
+                    : l.StartsWith("TextureSearchPaths=", StringComparison.OrdinalIgnoreCase) ? "TextureSearchPaths=" + Path.Combine(tdir, "reshade-shaders", "Textures") + "\\**"
+                    : l.StartsWith("PresetPath=", StringComparison.OrdinalIgnoreCase) ? "PresetPath=.\\ReShadePreset.ini"
+                    : l.StartsWith("ShowFPS=", StringComparison.OrdinalIgnoreCase) ? "ShowFPS=0"
+                    : l.StartsWith("ShowClock=", StringComparison.OrdinalIgnoreCase) ? "ShowClock=0"
+                    : l.StartsWith("PerformanceMode=", StringComparison.OrdinalIgnoreCase) ? "PerformanceMode=1"
+                    : l).ToArray();
+                AtomicFile.WriteAllText(ini, string.Join("\r\n", lines) + "\r\n");
+                var preset = Path.Combine(tdir, "ReShadePreset.ini");
+                var localPreset = Path.Combine(Path.GetDirectoryName(exe)!, "ReShadePreset.ini");
+                if (File.Exists(preset) && !File.Exists(localPreset)) File.Copy(preset, localPreset);
+                Log.Info($"ReShade set up for {def.Name}: {ini}");
+            }
+            done.Add(def.Name);
+        }
+        return done;
+    }
+
     /// <summary>Called right before launch. Never throws: a ReShade problem must not stop the game.</summary>
     public static void ApplyFor(Game g)
     {
