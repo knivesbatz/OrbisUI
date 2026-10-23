@@ -29,6 +29,10 @@ public static class SettingsScreens
     static Screen Library() => new ListScreen("Library", new[]
     {
         new ListItem { Glyph = "\uE72C", Label = "Rescan Library Now", Sub = () => $"{Shell.Library.Games.Count} games found", Activate = () => Shell.Window.Rescan() },
+        new ListItem { Glyph = "\uE7FC", Label = "Add Games to Steam Automatically", Sub = () => "Emulated and added games appear in Steam with SteamGridDB art, before Steam starts",
+            Check = () => S.AddGamesToSteam, Activate = () => { S.AddGamesToSteam = !S.AddGamesToSteam; Save(); } },
+        new ListItem { Glyph = "\uE895", Label = "Add Games to Steam Now", Sub = () => "Closes and restarts Steam if it is running",
+            Activate = async () => { Shell.Toast("Steam", "Adding your games to Steam…", "\uE895"); Shell.Message("Steam", await SteamShortcuts.SyncNowAsync(Shell.Library.Games.ToList())); } },
         new ListItem { Glyph = "\uE8B9", Label = "Refresh All Artwork and Information", Activate = () =>
             {
                 foreach (var g in Shell.Library.Games) { g.MetaTried = false; }

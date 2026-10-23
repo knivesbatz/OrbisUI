@@ -81,10 +81,16 @@ public sealed class MainWindow : Window
     // ---------------- startup ----------------
     void Start()
     {
-        if (AppSettings.Current.StartSteamSilently) Task.Run(Steam.EnsureRunningSilently);
         if (Emulators.AutoDetect().Count > 0) AppSettings.Current.Save();
         Task.Run(EmulatorProfiles.EnsureAll);
         Shell.Library.LoadCached();
+        // Steam reads shortcuts.vdf only at startup, so emulated and added games go in before Steam starts.
+        var games = Shell.Library.Games.ToList();
+        Task.Run(async () =>
+        {
+            if (AppSettings.Current.AddGamesToSteam) await SteamShortcuts.SyncIfClosedAsync(games);
+            if (AppSettings.Current.StartSteamSilently) Steam.EnsureRunningSilently();
+        });
         Action next = () =>
         {
             if (!AppSettings.Current.SetupComplete) Shell.Reset(new SetupWizard());

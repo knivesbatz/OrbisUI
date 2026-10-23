@@ -77,6 +77,8 @@ public sealed class AppSettings
     // Steam
     public bool StartSteamSilently { get; set; } = true;
     public bool LaunchSteamGamesThroughSteam { get; set; } = true;
+    /// <summary>Add emulated and manually added games to Steam as non-Steam shortcuts (Big Picture overlay).</summary>
+    public bool AddGamesToSteam { get; set; } = true;
 
     // Lossless Scaling
     public bool LosslessEnabled { get; set; }

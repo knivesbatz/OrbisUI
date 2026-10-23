@@ -338,6 +338,46 @@ public sealed partial class MetadataService
         catch (Exception ex) { Log.Warn($"app art {name}: {ex.Message}"); return null; }
     }
 
+    /// <summary>
+    /// Steam library art for a non-Steam shortcut, from SteamGridDB (the user's default source): portrait capsule, wide capsule,
+    /// hero and logo, saved under userdata\...\config\grid with Steam's file names. Existing files are kept.
+    /// </summary>
+    public static async Task SteamLibraryArtAsync(Game g, string title, string gridDir, uint appId, CancellationToken ct)
+    {
+        var key = Secrets.Get(Secrets.SteamGridDb);
+        if (key == null) return;
+        HttpRequestMessage Req(string path)
+        {
+            var r = new HttpRequestMessage(HttpMethod.Get, "https://www.steamgriddb.com/api/v2/" + path);
+            r.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+            return r;
+        }
+        string term = Regex.Replace(title, @"\(Disc \d+\)", "").Trim();
+        string? id;
+        using (var d = await GetJson(Req("search/autocomplete/" + Uri.EscapeDataString(term)), ct))
+        {
+            if (d == null || !d.RootElement.TryGetProperty("data", out var arr) || arr.GetArrayLength() == 0) return;
+            var best = arr.EnumerateArray().FirstOrDefault(e => TitlesMatch(e.GetProperty("name").GetString() ?? "", term));
+            id = (best.ValueKind == JsonValueKind.Undefined ? arr[0] : best).GetProperty("id").GetRawText();
+        }
+        Directory.CreateDirectory(gridDir);
+        foreach (var (query, suffix) in new[]
+        {
+            ($"grids/game/{id}?dimensions=600x900&types=static&nsfw=false&humor=false", "p"),
+            ($"grids/game/{id}?dimensions=920x430,460x215&types=static&nsfw=false&humor=false", ""),
+            ($"heroes/game/{id}?types=static&nsfw=false&humor=false", "_hero"),
+            ($"logos/game/{id}?types=static&nsfw=false&humor=false", "_logo"),
+        })
+        {
+            if (Directory.EnumerateFiles(gridDir, $"{appId}{suffix}.*").Any()) continue;
+            using var d = await GetJson(Req(query), ct);
+            if (FirstUrl(d) is not string url || await GetBytes(url, ct) is not byte[] img) continue;
+            var ext = Path.GetExtension(new Uri(url).AbsolutePath).ToLowerInvariant() is ".jpg" or ".jpeg" ? ".jpg" : ".png";
+            AtomicFile.WriteAllBytes(Path.Combine(gridDir, $"{appId}{suffix}{ext}"), img);
+        }
+        Log.Info($"Steam library art for {title} from SteamGridDB");
+    }
+
     /// <summary>Stand-in game so app art can use the SteamGridDB search.</summary>
     public static Game AppGame(string name) => new() { Id = "app:" + name, Title = name };
 

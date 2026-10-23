@@ -125,6 +125,22 @@ public class CoreTests
     }
 
     [Fact]
+    public void SteamShortcuts_MergeAddsOnceAndRoundTrips()
+    {
+        var g = new Game { Id = "PS2:abc", Title = "Test Game", Platform = "PS2" };
+        var root = new Vdf.Node();
+        var e = new SteamShortcuts.Entry(g, "Test Game", @"C:\emu\pcsx2-qt.exe", "-batch -- \"x.iso\"", @"C:\emu");
+        var (added, _) = SteamShortcuts.Merge(root, new[] { e });
+        Assert.Single(added);
+        var back = Vdf.ParseBinary(Vdf.WriteBinary(root));
+        Assert.Equal(1, back.Child("shortcuts")!.Count);
+        var (again, repaired) = SteamShortcuts.Merge(back, new[] { e });
+        Assert.Empty(again);
+        Assert.Equal(0, repaired);
+        Assert.True((SteamShortcuts.AppId(g) & 0x80000000u) != 0);
+    }
+
+    [Fact]
     public void Lossless_CoversNeedsMostOfTheGame()
     {
         var game = new Native.RECT { Left = 0, Top = 0, Right = 1920, Bottom = 1080 };
