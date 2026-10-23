@@ -100,7 +100,7 @@ public static class SettingsScreens
             Adjust = d => { S.MusicVolume = Math.Clamp(Math.Round(S.MusicVolume + d * 0.1, 1), 0, 1); Save(); Shell.Window.SyncMusic(); Sound.Play(Sfx.Cursor); } },
         new ListItem { Glyph = "\uE768", Label = "Startup Animation", Check = () => S.BootAnimation, Activate = () => { S.BootAnimation = !S.BootAnimation; Save(); } },
         new ListItem { Glyph = "\uE790", Label = "Animated Background", Check = () => S.AnimatedBackground, Activate = () => { S.AnimatedBackground = !S.AnimatedBackground; Save(); Shell.Window.Background_.SetRunning(false); Shell.Window.Background_.SetRunning(true); } },
-        new ListItem { Glyph = "\uE7F4", Label = "Display Settings", Sub = () => "Resolution, scaling and brightness (Windows)", Activate = () => WinSettings("ms-settings:display") },
+        new ListItem { Glyph = "\uE7F4", Label = "Display Settings", Sub = () => "Resolution, refresh rate and brightness", Activate = () => Shell.Push(DisplayScreen()) },
     });
 
     static Screen AccessibilityScreen() => new ListScreen("Accessibility", new[]
@@ -117,6 +117,70 @@ public static class SettingsScreens
         new ListItem { Glyph = "\uE767", Label = "Audio Output and Input", Activate = () => WinSettings("ms-settings:sound") },
         new ListItem { Glyph = "\uE83F", Label = "Power and Battery", Activate = () => WinSettings("ms-settings:powersleep") },
     });
+
+    static int? _brightness;
+
+    static Screen DisplayScreen()
+    {
+        ListScreen? scr = null;
+        scr = new ListScreen("Display Settings", new[]
+        {
+            new ListItem { Glyph = "\uE7F4", Label = "Resolution", Value = () => Display.Current().ToString(), Activate = () =>
+            {
+                var cur = Display.Current();
+                var list = Display.Resolutions();
+                Shell.Push(new ListScreen("Resolution", list.Select(m => new ListItem
+                {
+                    Label = m.ToString(), Check = () => m.Width == cur.Width && m.Height == cur.Height,
+                    // Keep the refresh rate if the new resolution supports it, otherwise its fastest.
+                    Activate = () => { Shell.Pop(); var hz = Display.RefreshRates(m.Width, m.Height); TryDisplay(m with { Hz = hz.Contains(cur.Hz) ? cur.Hz : hz.FirstOrDefault() }); },
+                }), dialog: true, select: Math.Max(0, list.FindIndex(m => m.Width == cur.Width && m.Height == cur.Height))));
+            } },
+            new ListItem { Glyph = "\uE916", Label = "Refresh Rate", Value = () => $"{Display.Current().Hz} Hz", Activate = () =>
+            {
+                var cur = Display.Current();
+                var rates = Display.RefreshRates(cur.Width, cur.Height);
+                Shell.Push(new ListScreen("Refresh Rate", rates.Select(hz => new ListItem
+                {
+                    Label = $"{hz} Hz", Check = () => hz == cur.Hz,
+                    Activate = () => { Shell.Pop(); TryDisplay(cur with { Hz = hz }); },
+                }), dialog: true, select: Math.Max(0, rates.IndexOf(cur.Hz))));
+            } },
+            new ListItem { Glyph = "\uE706", Label = "Brightness", Value = () => _brightness is int b ? $"{b}%" : "…",
+                Adjust = d => { if (_brightness is not int b) return; _brightness = Math.Clamp(b + d * 10, 0, 100); Display.SetBrightness(_brightness.Value); Sound.Play(Sfx.Cursor); } },
+        });
+        Task.Run(Display.GetBrightness).ContinueWith(t => { _brightness = t.Result; scr.Dispatcher.Invoke(() => scr.Refresh()); });
+        return scr;
+    }
+
+    /// <summary>Applies a display mode for 15 seconds; it stays only if the user confirms, like the console and Windows do.</summary>
+    static void TryDisplay(Display.Mode m)
+    {
+        if (m == Display.Current()) return;
+        if (Display.TryApply(m) is string err) { Shell.Message("Display Settings", err); return; }
+        int left = 15;
+        bool done = false;
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        ListScreen? dlg = null;
+        void Finish(bool keep)
+        {
+            if (done) return;
+            done = true;
+            timer.Stop();
+            if (keep) Display.Keep(m); else Display.Revert();
+            Shell.Pop();
+            Sound.Play(keep ? Sfx.Decide : Sfx.Back);
+        }
+        dlg = new ListScreen("Keep These Display Settings?", new[]
+        {
+            new ListItem { Glyph = "\uE73E", Label = "Keep", Sub = () => $"Going back to the previous settings in {left} s", Activate = () => Finish(true) },
+            new ListItem { Glyph = "\uE7A7", Label = "Revert", Activate = () => Finish(false) },
+        }, dialog: true, subtitle: $"{m} at {m.Hz} Hz") { OnBack = () => Finish(false) };
+        timer.Tick += (_, _) => { if (--left <= 0) Finish(false); else dlg.Refresh(); };
+        Shell.Push(dlg);
+        Sound.Play(Sfx.DialogShow);
+        timer.Start();
+    }
 
     static void WinSettings(string uri)
     {

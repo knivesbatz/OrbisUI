@@ -59,7 +59,13 @@ public static class Shell
     /// <summary>Swap the whole stack (boot -> setup -> home).</summary>
     public static void Reset(Screen s)
     {
-        foreach (var old in Stack) { old.OnHidden(); Window.ScreenLayer.Children.Remove(old); }
+        // Cross-fade: the old screens (e.g. the boot video) fade out underneath the new one.
+        foreach (var old in Stack)
+        {
+            old.OnHidden();
+            old.IsHitTestVisible = false;
+            UiKit.Animate(old, UIElement.OpacityProperty, 0, 600, () => Window.ScreenLayer.Children.Remove(old));
+        }
         Stack.Clear();
         Push(s);
     }

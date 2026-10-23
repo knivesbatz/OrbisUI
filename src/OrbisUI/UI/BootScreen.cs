@@ -80,6 +80,8 @@ public sealed class BootScreen : Screen
             Stretch = Stretch.UniformToFill, Volume = Sound.EffectiveVolume,
         };
         _video.MediaFailed += (_, _) => ShowLogin();
+        // The video ends on its own welcome screen, so it fades straight into the home screen.
+        _video.MediaEnded += (_, _) => Finish();
         _intro.Children.Add(_video);
         Loaded += (_, _) => _video.Play();
     }
@@ -124,15 +126,19 @@ public sealed class BootScreen : Screen
 
     public override bool OnInput(Btn b)
     {
+        if (_video != null && !_atLogin) { if (b is Btn.PS or Btn.Cross or Btn.Options) Finish(); return true; }
         if (!_atLogin) { Sound.StopFile(); ShowLogin(); return true; }
-        if (b is Btn.PS or Btn.Cross or Btn.Options)
-        {
-            if (_finished) return true;
-            _finished = true;
-            Sound.StopFile();
-            Play(Sfx.Login);
-            _done();
-        }
+        if (b is Btn.PS or Btn.Cross or Btn.Options) Finish();
         return true;
+    }
+
+    void Finish()
+    {
+        if (_finished) return;
+        _finished = true;
+        Sound.StopFile();
+        if (_video != null) { _video.IsMuted = true; UiKit.Animate(_video, OpacityProperty, 0, 600, () => _video.Close()); }
+        Play(Sfx.Login);
+        _done();
     }
 }

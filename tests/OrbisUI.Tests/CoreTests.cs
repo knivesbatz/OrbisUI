@@ -125,6 +125,15 @@ public class CoreTests
     }
 
     [Fact]
+    public void Display_CurrentModeIsListed()
+    {
+        var cur = Services.Display.Current();
+        Assert.True(cur.Width > 0 && cur.Height > 0);
+        Assert.Contains(Services.Display.Resolutions(), m => m.Width == cur.Width && m.Height == cur.Height);
+        Assert.Contains(cur.Hz, Services.Display.RefreshRates(cur.Width, cur.Height));
+    }
+
+    [Fact]
     public void Sound_RepairsBadBlockAlign()
     {
         var wav = Sound.Synth(Sfx.Cursor);
