@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.Win32;
 using OrbisUI.Core;
 using OrbisUI.Library;
+using OrbisUI.Services;
 
 namespace OrbisUI.Launch;
 
@@ -69,6 +70,7 @@ public sealed class LaunchService
         var rom = disc ?? g.Path;
         if (g.Kind == LaunchKind.Emulator && rom != null && !File.Exists(rom) && !Directory.Exists(rom) && g.Platform != "VITA")
             throw new LaunchException("The game file is missing. It may have been moved or deleted.");
+        ReShade.ApplyFor(g);
         Log.Info($"Launch: \"{exe}\" {args}");
         Status?.Invoke(g, "Starting…");
         var p = Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = false, WorkingDirectory = wd ?? "" })

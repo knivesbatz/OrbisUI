@@ -101,9 +101,31 @@ public static class GameMenu
         if (g.Kind is LaunchKind.Emulator or LaunchKind.Exe)
             items.Insert(1, new() { Glyph = "", Label = "Launch Arguments", Sub = () => o.Args ?? (g.Kind == LaunchKind.Emulator ? Emulators.Args(g.Platform) + "  (default)" : "None"),
                 Activate = () => Osk.Ask("Launch Arguments", o.Args ?? (g.Kind == LaunchKind.Emulator ? Emulators.Args(g.Platform) : ""), v => { o.Args = string.IsNullOrWhiteSpace(v) ? null : v; Save(); }) });
+        items.Add(new() { Glyph = "\uE790", Label = "ReShade Preset", Value = () => o.ReShadePreset is string p ? Path.GetFileNameWithoutExtension(p) : "Default",
+            Activate = () => Shell.Push(ReShadeScreen(g)) });
         if (g.Kind == LaunchKind.Emulator && o.Args != null)
             items.Add(new() { Glyph = "", Label = "Reset Launch Arguments to Default", Activate = () => { o.Args = null; Save(); } });
         return new ListScreen("Game Settings", items, subtitle: LibraryService.DisplayTitle(g));
+    }
+
+    /// <summary>Pick the ReShade preset this game starts with. Applied to ReShade.ini right before launch (backed up first).</summary>
+    static Screen ReShadeScreen(Game g)
+    {
+        var o = AppSettings.Current.For(g.Id);
+        var (state, ini) = ReShade.Check(g);
+        if (state != ReShade.State.Ready)
+            return new ListScreen("ReShade Preset", new[] { new ListItem { Glyph = "", Label = state == ReShade.State.AntiCheat
+                ? "This game uses anti-cheat, so OrbisUI won't change its ReShade files."
+                : "ReShade isn't installed for this game. Install ReShade into its folder first." } }, dialog: true);
+        var items = new List<ListItem>
+        {
+            new() { Label = "Default", Sub = () => "The preset ReShade had before OrbisUI changed it", Check = () => o.ReShadePreset == null,
+                Activate = () => { o.ReShadePreset = null; AppSettings.Current.Save(); ReShade.ApplyFor(g); Shell.Pop(); } },
+        };
+        foreach (var p in ReShade.Presets(ini!))
+            items.Add(new() { Label = Path.GetFileNameWithoutExtension(p), Sub = () => p, Check = () => string.Equals(o.ReShadePreset, p, StringComparison.OrdinalIgnoreCase),
+                Activate = () => { o.ReShadePreset = p; AppSettings.Current.Save(); Shell.Pop(); } });
+        return new ListScreen("ReShade Preset", items, subtitle: $"Presets next to the game and in {ReShade.SharedPresets}");
     }
 }
 
