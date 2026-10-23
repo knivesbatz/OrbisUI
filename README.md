@@ -4,7 +4,39 @@ A portable, controller-first PlayStation 4 style home screen for Windows handhel
 
 OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDAPI over USB and Bluetooth, no DS4Windows). It brings Steam, PC games and the PS1/PS2/PS3/PS4/PSP/Vita emulators together in one console-style interface. It is a personal project.
 
-The real status of every feature is in [FEATURES.md](FEATURES.md). The roadmap is in [TODO.md](TODO.md) and the [GitHub issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.2.3](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+
+## Features (implemented)
+
+**Console experience**
+- PS4 home: status bar (PS Plus, notifications, messages, friends, your Steam avatar and name, trophies, settings, power, clock), square tiles with the enlarged selection and Start bar; Up highlights the header icons in place
+- PlayStation Store and What's New tiles; What's New is an activity feed of you and your Steam friends (friends need a Steam Web API key)
+- Live video background, boot video that fades into home (PS skips it) and home music, from your own media in `Data\Media`
+- PS4 sound pack and icon pack (your files; repaired WAV headers), royal-blue theme, everything square-cornered
+- TV & Video folder: preview row, Down opens a 4-column app grid; apps added in Settings with SteamGridDB or image-file art
+- Built-in controller-friendly web browser (Google by default)
+- Notifications, power menu, setup wizard, on-screen keyboard
+
+**Games**
+- Steam games and shortcuts, PC games, PS1/PS2/PS3/PS4/PSP/Vita games from one ROM folder, multi-disc grouping with a disc picker
+- SteamGridDB artwork by default (retried after offline starts), controller cover picker, backgrounds after 5 s
+- Launch splash until the game is up, PS button returns home over a running game
+- Emulated and added games are added to Steam with SteamGridDB art so they run with the Big Picture overlay
+- Emulators fast boot by default (DuckStation and PCSX2 skip the BIOS, shadPS4 splash off); PCSX2 OSD off; DuckStation Ally profile
+- Per-game ReShade preset, Lossless Scaling auto-activation with a "PRO Mode Active" notification
+- Controller Fixer: find and install PlayStation button prompt mods with backup and undo
+
+**System**
+- Display settings in the UI (resolution, refresh rate, brightness) with a 15 s revert timer
+- Portable folder, DPAPI-encrypted keys, low idle CPU, GitHub auto-updater with SHA-256 checks
+
+## Next update (TODO)
+1. File manager and PS4 PKG extractor (#22)
+2. Native Wi-Fi, Bluetooth and audio pickers in the UI (#19)
+3. Steam friends list and chat inside the UI (#24)
+4. PlayStation Store metadata source (#8) and Ally profiles for PPSSPP, RPCS3, Vita3K, shadPS4 (#13)
+5. RetroAchievements, patches and texture packs (#27)
+6. On-device check of Lossless Scaling detection with a real game (#20)
 
 ## Install (portable)
 
@@ -40,7 +72,7 @@ The public package contains no Sony media. Built-in tones and vector icons are u
 | ✕ | Enter / Space | Select, start a game |
 | ○ | Esc / Backspace | Back |
 | △ / OPTIONS | F3 / Tab | Game options (artwork, settings, hide, uninstall) |
-| Up on the home row | Up | Function bar (Store, Notifications, Friends, Messages, Profile, Trophies, Settings, Power) |
+| Up on the home row | Up | Highlight the header icons (Store, Notifications, Messages, Friends, Profile, Trophies, Settings, Power) |
 | Down on TV & Video | Down | Its apps |
 | L1 / R1 | Page Up / Down | Jump |
 | PS button | Home | Home screen. While an emulator or PC game runs it brings the home screen back over the game |

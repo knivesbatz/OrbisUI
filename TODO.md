@@ -17,14 +17,17 @@ Each item maps to a [GitHub issue](https://github.com/knivesbatz/OrbisUI/issues)
 - [x] Lossless Scaling hotkey activation, GitHub auto-updater
 - [x] Unit tests, build script, portable ZIP
 
+## Done (v0.2.0 to v0.2.3)
+- [x] UI sounds fixed (pack WAV headers repaired), live background, boot video, home music
+- [x] Display settings with revert timer, PRO mode notification, emulator fast boot
+- [x] PS4 status bar header, row layout, TV & Video grid, Store / What's New / browser tiles, square corners
+- [x] ReShade presets (#21), Steam shortcuts import (#10), Controller Fixer (#23), WebView2 browser (#22 part)
+- [x] What's New activity feed (#24 part), SteamGridDB as default art source
+
 ## Next (priority order)
-1. Verify Steam launch, the return to home and Lossless Scaling on the Ally; fix whatever turns up
-2. PCSX2: make sure the on-screen messages are off in a backed-up profile; PPSSPP, RPCS3, Vita3K and shadPS4 Ally profiles (#13)
-3. Import emulated and PC games into Steam via shortcuts.vdf, with backup and Steam closed (#10)
-4. Steam friends, activity and achievements through the Steam Web API key (#24)
-5. Native Wi-Fi, Bluetooth and audio device pickers instead of Windows Settings handoffs (#19)
-6. WebView2 browser with OSK and downloads, plus a file manager and PKG extraction (#22)
-7. Controller Fixer (#23)
-8. ReShade preset selector (#21)
-9. RetroAchievements, patches and texture packs (#27)
-10. Bundle VC++ runtime check / emulator download helper
+1. File manager and PS4 PKG extractor (#22)
+2. Native Wi-Fi, Bluetooth and audio device pickers (#19)
+3. Steam friends list and chat in the UI (#24)
+4. PlayStation Store metadata source (#8); PPSSPP, RPCS3, Vita3K and shadPS4 Ally profiles (#13)
+5. RetroAchievements, patches and texture packs (#27)
+6. Verify Lossless Scaling detection on the Ally with a real game (#20)
