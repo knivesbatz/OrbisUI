@@ -94,8 +94,8 @@ public sealed class HomeScreen : Screen
         {
             new("PlayStation Store", "", () => SteamHandoff(Steam.Links.Store, "Store")),
             new("Notifications", "", () => Shell.Push(new NotificationsScreen())),
-            new("Messages", "", () => SteamHandoff(Steam.Links.Chat, "Messages")),
-            new("Friends", "", () => SteamHandoff(Steam.Links.Friends, "Friends")),
+            new("Messages", "", () => FriendsScreen.Open(true)),
+            new("Friends", "", () => FriendsScreen.Open(false)),
             new("Profile", "", () => SteamHandoff(Steam.Links.Profile, "Profile")),
             new("Trophies", "", () => SteamHandoff(Steam.Links.Achievements, "Trophies"),
                 Geometry.Parse("M14,4 H42 V14 C42,26 34,32 28,33 C22,32 14,26 14,14 Z M14,8 H6 C6,18 10,22 15,22 M42,8 H50 C50,18 46,22 41,22 M28,33 V42 M18,50 H38 L36,42 H20 Z")),
@@ -516,7 +516,7 @@ public sealed class HomeScreen : Screen
         }
     }
 
-    static void SteamHandoff(string url, string what)
+    internal static void SteamHandoff(string url, string what)
     {
         if (Steam.FindInstall() == null) { Shell.Message(what, "Steam isn't installed, so this isn't available yet. Install Steam and sign in, then try again."); return; }
         Steam.OpenUrl(url);

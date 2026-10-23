@@ -174,11 +174,60 @@ public static class SettingsScreens
 
     static Screen DevicesScreen() => new ListScreen("Network and Devices", new[]
     {
-        new ListItem { Glyph = "\uE701", Label = "Wi-Fi", Sub = () => "Opens Windows Wi-Fi settings", Activate = () => WinSettings("ms-settings:network-wifi") },
-        new ListItem { Glyph = "\uE702", Label = "Bluetooth Devices", Sub = () => "Pair controllers and headsets", Activate = () => WinSettings("ms-settings:bluetooth") },
-        new ListItem { Glyph = "\uE767", Label = "Audio Output and Input", Activate = () => WinSettings("ms-settings:sound") },
+        new ListItem { Glyph = "\uE701", Label = "Wi-Fi", Sub = () => "Choose a network", Activate = () => Shell.Push(WifiScreen()) },
+        new ListItem { Glyph = "\uE767", Label = "Audio Output", Sub = () => "Speakers, headphones, TV", Activate = () => Shell.Push(AudioScreen()) },
+        new ListItem { Glyph = "\uE702", Label = "Bluetooth Devices", Sub = () => "Pair controllers and headsets in Windows Settings", Activate = () => WinSettings("ms-settings:bluetooth") },
+        new ListItem { Glyph = "\uE720", Label = "Audio Input and Advanced Sound", Activate = () => WinSettings("ms-settings:sound") },
         new ListItem { Glyph = "\uE83F", Label = "Power and Battery", Activate = () => WinSettings("ms-settings:powersleep") },
     });
+
+    internal static Screen WifiScreen()
+    {
+        List<Devices.Network> nets;
+        try { nets = Devices.WifiNetworks(); }
+        catch (Exception ex) { return new ListScreen("Wi-Fi", new[] { new ListItem { Glyph = "\uE783", Label = "Wi-Fi isn't available", Sub = () => ex.Message } }); }
+        void Reopen() { Shell.Pop(); Shell.Push(WifiScreen()); }
+        void Join(Devices.Network n, string? pw)
+        {
+            Shell.Toast("Wi-Fi", "Connecting to " + n.Ssid, "\uE701");
+            Task.Run(() =>
+            {
+                var r = Devices.Connect(n, pw);
+                Thread.Sleep(4000);
+                Shell.Window.Dispatcher.Invoke(() => { Shell.Toast("Wi-Fi", r, "\uE701"); if (Shell.Top is ListScreen { Tag: "wifi" }) Reopen(); });
+            });
+        }
+        var items = nets.Select(n => new ListItem
+        {
+            Glyph = n.Connected ? "\uE701" : Devices.IsOpen(n) ? "\uE701" : "\uE72E", Label = n.Ssid,
+            Sub = () => (n.Connected ? "Connected \u00B7 " : n.Saved ? "Saved \u00B7 " : "") + n.Auth, Value = () => $"{n.Signal}%",
+            Activate = () =>
+            {
+                if (n.Connected) Shell.Confirm("Wi-Fi", $"Disconnect from {n.Ssid}?", () => { Devices.Disconnect(); Reopen(); }, "Disconnect", "Cancel");
+                else if (n.Saved || Devices.IsOpen(n)) Join(n, null);
+                else Osk.Ask("Password for " + n.Ssid, "", pw => Join(n, pw), secret: true);
+            },
+        }).ToList();
+        items.Add(new ListItem { Glyph = "\uE72C", Label = "Scan Again", Activate = Reopen });
+        items.Add(new ListItem { Glyph = "\uE713", Label = "Windows Wi-Fi Settings", Activate = () => WinSettings("ms-settings:network-wifi") });
+        return new ListScreen("Wi-Fi", items, subtitle: $"{nets.Count} networks") { Tag = "wifi" };
+    }
+
+    internal static Screen AudioScreen()
+    {
+        List<Devices.AudioDevice> outs;
+        try { outs = Devices.AudioOutputs(); }
+        catch (Exception ex) { return new ListScreen("Audio Output", new[] { new ListItem { Glyph = "\uE783", Label = "Audio devices couldn't be read", Sub = () => ex.Message } }); }
+        return new ListScreen("Audio Output", outs.Select(d => new ListItem
+        {
+            Glyph = "\uE767", Label = d.Name, Check = () => d.IsDefault,
+            Activate = () =>
+            {
+                try { Devices.SetDefaultOutput(d.Id); Shell.Pop(); Shell.Push(AudioScreen()); }
+                catch (Exception ex) { Shell.Message("Audio Output", ex.Message); }
+            },
+        }), subtitle: "Choose where sound plays");
+    }
 
     static int? _brightness;
 

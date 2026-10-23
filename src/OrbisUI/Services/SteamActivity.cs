@@ -100,6 +100,32 @@ public static class SteamActivity
         return sorted;
     }
 
+    public sealed record Friend(string SteamId, string Name, int State, string? Game);
+
+    /// <summary>Your Steam friends with their online state and current game; in-game first, then online, then offline.</summary>
+    public static async Task<List<Friend>> FriendsAsync()
+    {
+        var key = Secrets.Get(Secrets.SteamWebApi);
+        var me = AppSettings.Current.SteamId64;
+        var list = new List<Friend>();
+        if (key == null || me == null) return list;
+        var ids = new List<string>();
+        using (var d = await Get($"ISteamUser/GetFriendList/v1/?key={key}&steamid={me}&relationship=friend"))
+            if (d != null && d.RootElement.TryGetProperty("friendslist", out var fl))
+                ids.AddRange(fl.GetProperty("friends").EnumerateArray().Select(f => f.GetProperty("steamid").GetString()!));
+        foreach (var chunk in ids.Chunk(100))
+        {
+            using var d = await Get($"ISteamUser/GetPlayerSummaries/v2/?key={key}&steamids={string.Join(',', chunk)}");
+            if (d == null) continue;
+            foreach (var p in d.RootElement.GetProperty("response").GetProperty("players").EnumerateArray())
+                list.Add(new Friend(p.GetProperty("steamid").GetString()!, p.GetProperty("personaname").GetString() ?? "",
+                    p.TryGetProperty("personastate", out var s) ? s.GetInt32() : 0, p.TryGetProperty("gameextrainfo", out var g) ? g.GetString() : null));
+        }
+        return list.OrderBy(f => f.Game != null ? 0 : f.State > 0 ? 1 : 2).ThenBy(f => f.Name, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public static string StateText(Friend f) => f.Game != null ? "Playing " + f.Game : f.State switch { 0 => "Offline", 2 => "Busy", 3 => "Away", 4 => "Snooze", _ => "Online" };
+
     static async Task<JsonDocument?> Get(string path)
     {
         try

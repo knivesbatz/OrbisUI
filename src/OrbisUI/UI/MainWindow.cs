@@ -144,6 +144,9 @@ public sealed class MainWindow : Window
                 }
                 if (raw == "quit") { Application.Current.Shutdown(); return; }
                 if (raw.StartsWith("files:")) { FileManager.Open(raw[6..]); continue; }
+                if (raw == "wifi") { Shell.Push(SettingsScreens.WifiScreen()); continue; }
+                if (raw == "audio") { Shell.Push(SettingsScreens.AudioScreen()); continue; }
+                if (raw == "friends") { FriendsScreen.Open(false); continue; }
                 if (raw == "gametoast") { GameToast.Show("PRO Mode Active", "Frame generation is on for this game.", "\uE945"); continue; }
                 if (Enum.TryParse<Btn>(raw, true, out var b)) Shell.Dispatch(b);
                 await Task.Delay(250);
