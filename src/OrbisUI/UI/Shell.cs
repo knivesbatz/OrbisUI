@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using OrbisUI.Input;
 using OrbisUI.Launch;
@@ -65,7 +65,10 @@ public static class Shell
             old.OnHidden();
             old.IsHitTestVisible = false;
             Panel.SetZIndex(old, 1); // fade out on top of the new screen so it is revealed underneath
-            UiKit.Animate(old, UIElement.OpacityProperty, 0, 800, () => Window.ScreenLayer.Children.Remove(old));
+            // Even ease so the fade reads as a fade rather than a cut.
+            var fade = new System.Windows.Media.Animation.DoubleAnimation(0, UiKit.Dur(1200)) { EasingFunction = new System.Windows.Media.Animation.SineEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut } };
+            fade.Completed += (_, _) => Window.ScreenLayer.Children.Remove(old);
+            old.BeginAnimation(UIElement.OpacityProperty, fade);
         }
         Stack.Clear();
         Push(s);

@@ -137,7 +137,7 @@ public sealed class BootScreen : Screen
         if (_finished) return;
         _finished = true;
         Sound.StopFile();
-        if (_video != null) { _video.IsMuted = true; UiKit.Animate(_video, OpacityProperty, 0, 600, () => _video.Close()); }
+        if (_video != null) { _video.IsMuted = true; UiKit.Animate(_video, OpacityProperty, 0, 1200, () => _video.Close()); }
         Play(Sfx.Login);
         _done();
     }

@@ -51,7 +51,8 @@ public static class Tiles
         if (it.IconKey != null && IconPack.Get(it.IconKey, 384) is ImageSource tileImg)
         {
             // Some pack icons are rounded squares; fill behind them with their own edge colour so every tile is square.
-            if (tileImg is BitmapSource bs) g.Background = new SolidColorBrush(EdgeColor(bs));
+            // The Store bag has a transparent background; it sits on the same blue as the What's New tile.
+            g.Background = it.IconKey == "storetile" ? UiKit.B("#144EB4") : tileImg is BitmapSource bs ? new SolidColorBrush(EdgeColor(bs)) : null;
             g.Children.Add(new Image { Source = tileImg, Stretch = Stretch.UniformToFill });
             return g;
         }
