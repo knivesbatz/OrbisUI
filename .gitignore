@@ -18,3 +18,4 @@ Backups/
 *.iso
 *.pkg
 *.PUP
+out/

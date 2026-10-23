@@ -13,6 +13,8 @@ public sealed class Game
     public string? SteamAppId { get; set; }
     /// <summary>Exe, ROM file, game folder (PS3/PS4) or Vita title id.</summary>
     public string? Path { get; set; }
+    /// <summary>Original ROM file when Path points at a generated cue sheet.</summary>
+    public string? RomFile { get; set; }
     public string? Args { get; set; }
     public string? WorkDir { get; set; }
     public string? TitleId { get; set; }
@@ -26,11 +28,15 @@ public sealed class Game
     public string? MetaSource { get; set; }
     public string? ArtSource { get; set; }
     public bool MetaTried { get; set; }
+    public bool SgdbTried { get; set; }
+    /// <summary>Other discs of a multi-disc game (Path is disc 1).</summary>
+    public List<string>? Discs { get; set; }
     public long SizeBytes { get; set; }
 
     /// <summary>Local square tile and background image (absolute paths inside Cache/Art).</summary>
     public string? Art { get; set; }
     public string? Background { get; set; }
+    public string? BgSource { get; set; }
 
     /// <summary>Local art shipped with the game (PS4/Vita icon0.png, Steam library cache, emulator covers).</summary>
     public string? LocalArtHint { get; set; }

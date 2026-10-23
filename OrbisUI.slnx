@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OrbisUI/OrbisUI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OrbisUI.Tests/OrbisUI.Tests.csproj" />
+  </Folder>
+</Solution>
