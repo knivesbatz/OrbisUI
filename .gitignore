@@ -1,0 +1,20 @@
+bin/
+obj/
+dist/
+.vs/
+*.user
+# Runtime data created next to the exe when run from the repo
+Config/
+Cache/
+Logs/
+Data/
+Downloads/
+Backups/
+# Never commit proprietary media, firmware or game files
+*.mp4
+*.mp3
+*.wav
+*.bin
+*.iso
+*.pkg
+*.PUP
