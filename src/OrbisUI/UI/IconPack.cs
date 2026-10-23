@@ -19,7 +19,7 @@ public static class IconPack
         ["controller"] = "quickmenu_controller.png", ["update"] = "Update.png", ["network"] = "Network.png", ["sound"] = "Sound.png",
         ["bluetooth"] = "Bluetooth.png", ["storage"] = "Storage.png", ["lock"] = "Lock.png", ["plus"] = "psplus.png",
         // Home tiles the user supplied (Data\Icons\store.png and "whats new.png").
-        ["storetile"] = "store.png", ["whatsnew"] = "whats new.png", ["browsertile"] = "web browser.png",
+        ["storetile"] = "store.png", ["whatsnew"] = "whats new.png", ["browsertile"] = "web browser.png", ["filestile"] = "file manager.png",
     };
 
     static string Dir => Path.Combine(AppPaths.Root, "Data", "Icons");
