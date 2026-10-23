@@ -309,7 +309,7 @@ public sealed class HomeScreen : Screen
             {
                 HomeKind.Folder => $"{it.Folder!.Apps.Count} items",
                 HomeKind.Library => $"{Shell.Library.Games.Count} games and apps",
-                HomeKind.Store => "Opens the Steam store",
+                HomeKind.Store => "",
                 HomeKind.WhatsNew => Notifications.Items.Count > 0 ? Notifications.Items[0].Title : "Notifications and updates",
                 _ => "",
             };
