@@ -311,7 +311,7 @@ public sealed class HomeScreen : Screen
                 HomeKind.Folder => $"{it.Folder!.Apps.Count} items",
                 HomeKind.Library => $"{Shell.Library.Games.Count} games and apps",
                 HomeKind.Store => "",
-                HomeKind.WhatsNew => Notifications.Items.Count > 0 ? Notifications.Items[0].Title : "Notifications and updates",
+                HomeKind.WhatsNew => "",
                 _ => "",
             };
             _desc.Text = "";
@@ -509,7 +509,7 @@ public sealed class HomeScreen : Screen
             case HomeKind.Folder when it.Folder!.Apps.Count > 0: _subSel = 0; Play(Sfx.Cursor); PlaceSub(); break;
             case HomeKind.Library: Play(Sfx.Enter); Shell.Push(new LibraryScreen()); break;
             case HomeKind.Store: Play(Sfx.Decide); SteamHandoff(Steam.Links.Store, "PlayStation Store"); break;
-            case HomeKind.WhatsNew: Play(Sfx.Enter); Shell.Push(new NotificationsScreen()); break;
+            case HomeKind.WhatsNew: Play(Sfx.Enter); Shell.Push(new WhatsNewScreen()); break;
             case HomeKind.Browser: Play(Sfx.Boot); Shell.Push(new BrowserScreen()); break;
         }
     }
