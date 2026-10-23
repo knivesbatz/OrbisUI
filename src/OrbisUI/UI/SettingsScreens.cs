@@ -22,9 +22,66 @@ public static class SettingsScreens
         new ListItem { Glyph = "\uE8D7", Label = "Accounts and Services", Sub = () => "Steam, SteamGridDB, IGDB", Activate = () => Shell.Push(AccountsScreen()) },
         new ListItem { Glyph = "\uE7B3", Label = "Lossless Scaling", Activate = () => Shell.Push(LosslessScreen()) },
         new ListItem { Glyph = "\uE7FC", Label = "Controllers", Sub = () => Shell.Pad?.PadName ?? "No controller connected", Activate = () => Shell.Push(new ControllerTestScreen()) },
+        new ListItem { Glyph = "\uE7FC", Label = "Controller Fixer", Sub = () => "Find and install PlayStation button prompt mods", Activate = () => Shell.Push(FixerGames()) },
         new ListItem { Glyph = "\uE895", Label = "System Software Update", Sub = () => "Version " + Updater.CurrentText, Activate = () => Shell.Push(UpdateScreen()) },
         new ListItem { Glyph = "\uE770", Label = "System", Activate = () => Shell.Push(SystemScreen()) },
     });
+
+    // ---- Controller Fixer: PC games only (emulated games already show PlayStation buttons) ----
+    static Screen FixerGames()
+    {
+        var games = Shell.Library.Games.Where(g => g.Kind is LaunchKind.Steam or LaunchKind.Exe && ControllerFixer.GameFolder(g) != null)
+            .OrderBy(LibraryService.DisplayTitle).ToList();
+        if (games.Count == 0) return new ListScreen("Controller Fixer", new[] { new ListItem { Glyph = "\uE946", Label = "No installed PC games were found." } }, dialog: true);
+        return new ListScreen("Controller Fixer", games.Select(g => new ListItem
+        {
+            Label = LibraryService.DisplayTitle(g), Sub = () => ControllerFixer.History(g.Id).Count > 0 ? "Mod installed" : null,
+            Activate = () => Shell.Push(FixerGame(g)),
+        }), subtitle: "Choose a game to give it PlayStation button prompts.");
+    }
+
+    static Screen FixerGame(Game g)
+    {
+        var title = LibraryService.DisplayTitle(g);
+        var items = ControllerFixer.Searches(title).Select(s => new ListItem
+        {
+            Glyph = "\uE721", Label = s.label, Sub = () => "Opens in the browser. Save the mod to your Downloads folder.", Activate = () => Native.OpenShell(s.url),
+        }).ToList();
+        items.Add(new ListItem
+        {
+            Glyph = "\uE896", Label = "Install Downloaded Mod", Sub = () => "Pick the .zip, .7z or .rar. Files it replaces are backed up first.",
+            Activate = () => FilePicker.Pick("Choose the Mod", ControllerFixer.ArchiveTypes, archive =>
+            {
+                var target = ControllerFixer.GameFolder(g)!;
+                try
+                {
+                    var root = ControllerFixer.ContentRoot(ControllerFixer.Stage(archive), target);
+                    var files = ControllerFixer.Files(root);
+                    Shell.Confirm("Install Mod", $"Copy {files.Length} files from {Path.GetFileName(archive)} into {target}? You can undo this later.", () =>
+                    {
+                        try
+                        {
+                            var inst = ControllerFixer.Apply(g.Id, archive, root, target);
+                            Shell.Message("Controller Fixer", $"Installed: {inst.Added.Count} new files, {inst.Replaced.Count} replaced (backed up).");
+                        }
+                        catch (Exception ex) { Shell.Message("Controller Fixer", "The mod wasn't installed and the game was restored: " + ex.Message); }
+                    });
+                }
+                catch (Exception ex) { Shell.Message("Controller Fixer", ex.Message); }
+            }, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\Downloads"),
+        });
+        foreach (var (inst, dir) in ControllerFixer.History(g.Id))
+            items.Add(new ListItem
+            {
+                Glyph = "\uE7A7", Label = $"Undo {Path.GetFileName(inst.Archive)}", Sub = () => $"Installed {inst.When:g}",
+                Activate = () => Shell.Confirm("Undo Mod", "Remove the mod's files and put the originals back?", () =>
+                {
+                    try { ControllerFixer.Undo(inst, dir); Shell.Pop(); Shell.Message("Controller Fixer", "The game's original files are back."); }
+                    catch (Exception ex) { Shell.Message("Controller Fixer", ex.Message); }
+                }),
+            });
+        return new ListScreen("Controller Fixer", items, subtitle: title);
+    }
 
     static Screen Library() => new ListScreen("Library", new[]
     {

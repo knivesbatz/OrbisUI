@@ -141,6 +141,28 @@ public class CoreTests
     }
 
     [Fact]
+    public void ControllerFixer_ApplyThenUndoRestoresGame()
+    {
+        var tmp = Path.Combine(Path.GetTempPath(), "orbis-fixer-" + Guid.NewGuid().ToString("N"));
+        AppPaths.OverrideRoot(Path.Combine(tmp, "root"));
+        var game = Directory.CreateDirectory(Path.Combine(tmp, "game")).FullName;
+        var mod = Directory.CreateDirectory(Path.Combine(tmp, "mod", "data")).FullName;
+        File.WriteAllText(Path.Combine(game, "keep.txt"), "original");
+        Directory.CreateDirectory(Path.Combine(game, "data"));
+        File.WriteAllText(Path.Combine(game, "data", "prompts.pak"), "xbox");
+        File.WriteAllText(Path.Combine(mod, "prompts.pak"), "ps4");
+        File.WriteAllText(Path.Combine(mod, "new.pak"), "extra");
+        var inst = Services.ControllerFixer.Apply("g1", "mod.zip", Path.Combine(tmp, "mod"), game);
+        Assert.Equal("ps4", File.ReadAllText(Path.Combine(game, "data", "prompts.pak")));
+        var (saved, dir) = Services.ControllerFixer.History("g1").Single();
+        Services.ControllerFixer.Undo(saved, dir);
+        Assert.Equal("xbox", File.ReadAllText(Path.Combine(game, "data", "prompts.pak")));
+        Assert.False(File.Exists(Path.Combine(game, "data", "new.pak")));
+        Assert.Equal("original", File.ReadAllText(Path.Combine(game, "keep.txt")));
+        Directory.Delete(tmp, true);
+    }
+
+    [Fact]
     public void Lossless_CoversNeedsMostOfTheGame()
     {
         var game = new Native.RECT { Left = 0, Top = 0, Right = 1920, Bottom = 1080 };
