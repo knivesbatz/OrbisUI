@@ -34,7 +34,10 @@ public sealed class BrowserScreen : Screen
             move(d) {
               const els = [...document.querySelectorAll(sel)].filter(vis);
               const step = d === 'down' ? 320 : d === 'up' ? -320 : 0;
-              if (!cur || !document.contains(cur) || !vis(cur)) { if (els.length) set(els[0]); else scrollBy(0, step); return; }
+              // First press lands on the page's focused or first text field (a search box), else the first link.
+              if (!cur || !document.contains(cur) || !vis(cur)) { const a = document.activeElement;
+                const first = els.includes(a) ? a : els.find(e => e.matches('input[type=text],input[type=search],input:not([type]),textarea')) || els[0];
+                if (first) set(first); else scrollBy(0, step); return; }
               const c = mid(cur.getBoundingClientRect()); let best = null, bs = 1e9;
               for (const e of els) { if (e === cur || e.contains(cur) || cur.contains(e)) continue;
                 const p = mid(e.getBoundingClientRect()), dx = p.x - c.x, dy = p.y - c.y;
@@ -46,7 +49,8 @@ public sealed class BrowserScreen : Screen
               if ((t === 'INPUT' && !['button','submit','checkbox','radio','reset','image','file'].includes(cur.type)) || t === 'TEXTAREA') return 'text:' + (cur.value || '');
               cur.click(); return ''; },
             type(v) { if (!cur) return; cur.focus(); cur.value = v; cur.dispatchEvent(new Event('input', { bubbles: true })); cur.dispatchEvent(new Event('change', { bubbles: true }));
-              if (cur.tagName === 'INPUT' && cur.form) { cur.form.requestSubmit ? cur.form.requestSubmit() : cur.form.submit(); }
+              // Search boxes (Google's is a combobox textarea) submit their form; synthetic Enter keys are ignored by most sites.
+              if (cur.form && (cur.tagName === 'INPUT' || cur.getAttribute('role') === 'combobox' || cur.name === 'q')) { cur.form.requestSubmit ? cur.form.requestSubmit() : cur.form.submit(); }
               else ['keydown','keypress','keyup'].forEach(k => cur.dispatchEvent(new KeyboardEvent(k, { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }))); },
             scroll(dy) { scrollBy({ top: dy, behavior: 'smooth' }); },
             reset() { cur = null; }
@@ -58,9 +62,14 @@ public sealed class BrowserScreen : Screen
     readonly Window _win;
     readonly WebView2 _web = new() { DefaultBackgroundColor = System.Drawing.Color.White };
     readonly TextBlock _address = new() { FontFamily = UiKit.FontRegular, FontSize = 20, Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
-    bool _closed;
+    bool _closed, _done;
 
-    public BrowserScreen(string url = "https://www.google.com")
+    public const string HomePage = "https://www.google.com";
+
+    /// <summary>True while the page window has focus; the shell then routes the controller here.</summary>
+    public bool InFront => !_done && _win.IsActive;
+
+    public BrowserScreen(string url = HomePage)
     {
         _home = url;
         Background = Brushes.Black;
@@ -82,7 +91,8 @@ public sealed class BrowserScreen : Screen
         };
         // The pad only feeds the shell while one of its windows is in front.
         _win.Activated += (_, _) => { if (Shell.Pad != null) Shell.Pad.Foreground = true; Sound.Muted = false; };
-        _win.Closed += (_, _) => _closed = true;
+        _win.Deactivated += (_, _) => { if (Shell.Pad != null && !Shell.Window.IsActive) Shell.Pad.Foreground = false; };
+        _win.Closed += (_, _) => { _closed = true; if (!_done) Shell.Window.Dispatcher.BeginInvoke(Close); }; // Alt+F4 on the page
         Loaded += async (_, _) => await Start();
     }
 
@@ -94,27 +104,81 @@ public sealed class BrowserScreen : Screen
             var env = await CoreWebView2Environment.CreateAsync(null, Path.Combine(AppPaths.Cache, "Browser"));
             await _web.EnsureCoreWebView2Async(env);
             await _web.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(NavJs);
+            if (_done) return; // closed while the runtime was starting
+            await _web.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(NavJs);
             _web.CoreWebView2.SourceChanged += (_, _) => _address.Text = _web.Source?.ToString() ?? "";
             // Pop-ups open in the same view so the controller never loses the page.
-            _web.CoreWebView2.NewWindowRequested += (_, e) => { e.Handled = true; _web.CoreWebView2.Navigate(e.Uri); };
-            _web.CoreWebView2.Navigate(_home);
+            _web.CoreWebView2.NewWindowRequested += (_, e) => { e.Handled = true; Go(e.Uri); };
+            _web.CoreWebView2.ProcessFailed += (_, e) =>
+            {
+                Log.Warn($"browser process failed: {e.ProcessFailedKind} {e.Reason}");
+                // A crashed page reloads; losing the browser process itself ends the session.
+                if (e.ProcessFailedKind is CoreWebView2ProcessFailedKind.BrowserProcessExited) Shell.Window.Dispatcher.BeginInvoke(() => { Close(); Shell.Message("Internet Browser", "The browser stopped unexpectedly. Open it again from the home screen."); });
+                else if (e.ProcessFailedKind is CoreWebView2ProcessFailedKind.RenderProcessExited or CoreWebView2ProcessFailedKind.RenderProcessUnresponsive) Shell.Window.Dispatcher.BeginInvoke(() => { if (!_done) _web.CoreWebView2.Reload(); });
+            };
+            Go(_home);
         }
         catch (Exception ex)
         {
             Log.Warn("browser: " + ex.Message);
+            if (_done) return;
             Close();
             Shell.Message("Internet Browser", "The browser needs the Microsoft Edge WebView2 Runtime, which comes with Windows 11. " + ex.Message);
         }
     }
 
-    Task<string> Js(string code) => _web.CoreWebView2?.ExecuteScriptAsync(code) ?? Task.FromResult("");
+    void Go(string url)
+    {
+        try { _web.CoreWebView2?.Navigate(url); }
+        catch (ArgumentException) { _web.CoreWebView2?.Navigate(Search(url)); } // not a valid address: search for it
+    }
+
+    async Task<string> Js(string code)
+    {
+        try { return _done || _web.CoreWebView2 == null ? "" : await _web.CoreWebView2.ExecuteScriptAsync(code); }
+        catch (Exception ex) { Log.Warn("browser js: " + ex.Message); return ""; }
+    }
 
     void Close()
     {
+        if (_done) return;
+        if (Shell.Top == this) Shell.Pop(); // OnHidden tears the page down
+        else OnHidden();
+        Shell.Window.Activate();
+    }
+
+    /// <summary>Runs on every way off the stack (Back, PS/Home, a game launch), so the page window never outlives the screen.</summary>
+    public override void OnHidden()
+    {
+        if (_done) return;
+        _done = true;
         if (!_closed) _win.Close();
         _web.Dispose();
-        Shell.Pop();
-        Shell.Window.Activate();
+    }
+
+    /// <summary>Test hook: the bars render through WPF and the page (a native surface WPF can't render) is pasted in from WebView2's own capture.</summary>
+    internal async Task Shot(string path)
+    {
+        var page = new System.Windows.Media.Imaging.BitmapImage();
+        using (var ms = new MemoryStream())
+        {
+            await _web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, ms);
+            ms.Position = 0;
+            page.BeginInit(); page.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad; page.StreamSource = ms; page.EndInit();
+        }
+        var root = (FrameworkElement)_win.Content;
+        var dv = new DrawingVisual();
+        using (var dc = dv.RenderOpen())
+        {
+            dc.DrawRectangle(new VisualBrush(root), null, new Rect(root.RenderSize));
+            dc.DrawImage(page, new Rect(_web.TranslatePoint(new Point(), root), _web.RenderSize));
+        }
+        var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap((int)root.ActualWidth, (int)root.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+        rtb.Render(dv);
+        var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+        enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
+        using var fs = File.Create(path);
+        enc.Save(fs);
     }
 
     /// <summary>The on-screen keyboard lives in the shell window, so the page steps aside while it is up.</summary>
@@ -134,6 +198,7 @@ public sealed class BrowserScreen : Screen
 
     public override bool OnInput(Btn b)
     {
+        if (_done) return true;
         if (_web.CoreWebView2 == null) { if (b is Btn.Circle or Btn.Options) Close(); return true; }
         switch (b)
         {
@@ -154,7 +219,7 @@ public sealed class BrowserScreen : Screen
                 break;
             case Btn.Triangle:
                 Play(Sfx.Option);
-                Ask("Web Address or Search", _web.Source?.ToString() ?? "", v => _web.CoreWebView2.Navigate(ToUrl(v)));
+                Ask("Web Address or Search", _web.Source?.ToString() ?? "", v => Go(ToUrl(v)));
                 break;
             case Btn.Options or Btn.PS: Play(Sfx.Back); Close(); break;
         }
@@ -174,6 +239,8 @@ public sealed class BrowserScreen : Screen
         v = v.Trim();
         if (Uri.TryCreate(v, UriKind.Absolute, out var u) && (u.Scheme == "http" || u.Scheme == "https")) return v;
         if (!v.Contains(' ') && v.Contains('.') && Uri.TryCreate("https://" + v, UriKind.Absolute, out _)) return "https://" + v;
-        return "https://www.google.com/search?q=" + Uri.EscapeDataString(v);
+        return Search(v);
     }
+
+    static string Search(string v) => HomePage + "/search?q=" + Uri.EscapeDataString(v);
 }

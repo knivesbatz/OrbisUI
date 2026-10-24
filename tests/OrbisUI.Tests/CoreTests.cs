@@ -252,4 +252,10 @@ public class CoreTests
         Assert.StartsWith("exe:", store.Id);
         Assert.Equal("Microsoft.Foo", OrbisUI.UI.GameMenu.VersionName(store.Path!));
     }
+
+    [Theory]
+    [InlineData("example.com", "https://example.com")]
+    [InlineData("http://a.org/x", "http://a.org/x")]
+    [InlineData("ps4 games", "https://www.google.com/search?q=ps4%20games")]
+    public void BrowserAddressOrGoogleSearch(string typed, string url) => Assert.Equal(url, OrbisUI.UI.BrowserScreen.ToUrl(typed));
 }

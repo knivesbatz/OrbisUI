@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- Internet Browser: the controller now drives the page (it was ignored while the page was in front), the first D-pad press lands on the search box, and searching from the on-screen keyboard submits Google's search.
+- Internet Browser no longer crashes or strands its window: PS/Home, game launches and Alt+F4 close it cleanly, invalid addresses become a Google search, and a crashed page reloads.
+
 ## 0.4.0 (2026-10-23)
 - Up on the home screen works like the console: the status bar hides, the home row drops to the bottom and a row of large function icons appears, with the selected one enlarged and named.
 - PlayStation Store is a metadata source for PlayStation games: square key art, description, publisher, year and genres.

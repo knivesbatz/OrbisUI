@@ -134,6 +134,7 @@ public sealed class MainWindow : Window
                 {
                     var dir = System.IO.Path.Combine(AppPaths.Logs, "shots");
                     Directory.CreateDirectory(dir);
+                    if (Shell.Top is BrowserScreen web) { await web.Shot(System.IO.Path.Combine(dir, raw[5..] + ".png")); continue; }
                     var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap((int)UiKit.W / 2, (int)UiKit.H / 2, 48, 48, PixelFormats.Pbgra32);
                     rtb.Render(_stage);
                     var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
@@ -146,6 +147,8 @@ public sealed class MainWindow : Window
                 if (raw.StartsWith("files:")) { FileManager.Open(raw[6..]); continue; }
                 if (raw == "wifi") { Shell.Push(SettingsScreens.WifiScreen()); continue; }
                 if (raw == "audio") { Shell.Push(SettingsScreens.AudioScreen()); continue; }
+                if (raw.StartsWith("text:")) { Shell.Top?.OnText(raw[5..]); continue; }
+                if (raw == "browser" || raw.StartsWith("browser:")) { Shell.Push(raw.Length > 8 ? new BrowserScreen(raw[8..]) : new BrowserScreen()); continue; }
                 if (raw == "settings") { Shell.Push(SettingsScreens.Root()); continue; }
                 if (raw == "trophies") { TrophiesScreen.Open(); continue; }
                 if (raw == "friends") { FriendsScreen.Open(false); continue; }
@@ -208,7 +211,8 @@ public sealed class MainWindow : Window
 
     void OnPressed(Btn b)
     {
-        if (!IsActive) return;
+        // The browser page is its own window, so the shell isn't active while it is in front.
+        if (!IsActive && Shell.Top is not BrowserScreen { InFront: true }) return;
         Cursor = Cursors.None;
         if (_splash.Visibility == Visibility.Visible)
         {
