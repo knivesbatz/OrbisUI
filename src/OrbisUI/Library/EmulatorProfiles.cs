@@ -13,6 +13,7 @@ public static class EmulatorProfiles
         try { EnsureDuckStation(); } catch (Exception ex) { Log.Warn("DuckStation profile: " + ex.Message); }
         try { EnsurePcsx2QuietOsd(); } catch (Exception ex) { Log.Warn("PCSX2 profile: " + ex.Message); }
         try { EnsureShadPs4NoSplash(); } catch (Exception ex) { Log.Warn("shadPS4 profile: " + ex.Message); }
+        try { EnsureShadPs4Ally(); } catch (Exception ex) { Log.Warn("shadPS4 Ally profile: " + ex.Message); }
         try { EnsureStarter("PSP", Path.Combine("memstick", "PSP", "SYSTEM", "ppsspp.ini"), PpssppIni); } catch (Exception ex) { Log.Warn("PPSSPP profile: " + ex.Message); }
         try { EnsureStarter("PS3", Path.Combine("config", "config.yml"), Rpcs3Yml); } catch (Exception ex) { Log.Warn("RPCS3 profile: " + ex.Message); }
         try { EnsureStarter("VITA", "config.yml", Vita3kYml); } catch (Exception ex) { Log.Warn("Vita3K profile: " + ex.Message); }
@@ -232,6 +233,37 @@ public static class EmulatorProfiles
         // Renderer 14 = Vulkan. Fast boot and widescreen patches live in [EmuCore].
         if (SetIniKeys(ini, "EmuCore/GS", ("OsdMessagesPos", "0"), ("Renderer", "14"))) Log.Info("PCSX2 set to Vulkan, no OSD: " + ini);
         if (SetIniKeys(ini, "EmuCore", ("EnableFastBoot", "true"), ("EnableWideScreenPatches", "true"))) Log.Info("PCSX2 fast boot and widescreen on: " + ini);
+    }
+
+    // Bloodborne on the Ally: skip the logos, 60 fps with frame pacing fixes, and the two cheapest visual costs off.
+    // Only applied while no Bloodborne patch is enabled yet, so choices made later in shadPS4's patch manager stick.
+    static readonly string[] BloodbornePatches = { "Skip Intro", "60 FPS++", "Disable Chromatic Aberration", "Disable Motion Blur (Perf Increase)" };
+
+    /// <summary>
+    /// shadPS4 for the Ally: pipeline cache on (no shader stutter after the first visit to an area) and the Bloodborne patches
+    /// above. Files are backed up first. Patches target the 1.09 game update.
+    /// </summary>
+    public static void EnsureShadPs4Ally()
+    {
+        var appdata = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "shadPS4");
+        var cfg = Path.Combine(appdata, "config.json");
+        if (File.Exists(cfg) && File.ReadAllText(cfg) is var json && json.Contains("\"pipeline_cache_enabled\": false"))
+        {
+            Log.Info("shadPS4 config backed up to " + Backup(cfg));
+            AtomicFile.WriteAllText(cfg, json.Replace("\"pipeline_cache_enabled\": false", "\"pipeline_cache_enabled\": true"));
+            Log.Info("shadPS4 pipeline cache turned on");
+        }
+        var bb = Path.Combine(appdata, "patches", "shadPS4", "Bloodborne.xml");
+        if (!File.Exists(bb)) return;
+        var xml = File.ReadAllText(bb);
+        if (xml.Contains("isEnabled=\"true\"")) return;
+        var updated = xml;
+        foreach (var name in BloodbornePatches)
+            updated = System.Text.RegularExpressions.Regex.Replace(updated, $"(<Metadata [^>]*Name=\"{System.Text.RegularExpressions.Regex.Escape(name)}\"[^>]*isEnabled=)\"false\"", "$1\"true\"");
+        if (updated == xml) return;
+        Log.Info("Bloodborne patches backed up to " + Backup(bb));
+        AtomicFile.WriteAllText(bb, updated);
+        Log.Info("Bloodborne patches on: " + string.Join(", ", BloodbornePatches));
     }
 
     /// <summary>shadPS4 shows the game's splash image before booting; turn it off (config.json in newer builds, config.toml in older ones). Backed up first.</summary>

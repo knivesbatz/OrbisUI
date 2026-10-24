@@ -309,6 +309,9 @@ public static class SettingsScreens
         KeyItem("IGDB Client Secret", "Pairs with the Client ID above", Secrets.IgdbClientSecret, async v =>
             Secrets.Get(Secrets.IgdbClientId) is string id && await MetadataService.ValidateIgdb(id, v)),
         KeyItem("Steam Web API Key", "Friends list and achievements. steamcommunity.com/dev/apikey", Secrets.SteamWebApi, null),
+        new ListItem { Glyph = "", Label = "RetroAchievements User", Sub = () => "Your RetroAchievements user name, for Trophies", Value = () => Secrets.Get(Secrets.RetroAchievementsUser) ?? "Not set",
+            Activate = () => Osk.Ask("RetroAchievements User", Secrets.Get(Secrets.RetroAchievementsUser) ?? "", v => Secrets.Set(Secrets.RetroAchievementsUser, v)) },
+        KeyItem("RetroAchievements Web API Key", "Trophies from your emulated games. retroachievements.org > Settings > Keys", Secrets.RetroAchievementsKey, null),
     });
 
     static ListItem KeyItem(string label, string help, string name, Func<string, Task<bool>>? validate) => new()

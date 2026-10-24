@@ -97,7 +97,7 @@ public sealed class HomeScreen : Screen
             new("Messages", "", () => FriendsScreen.Open(true)),
             new("Friends", "", () => FriendsScreen.Open(false)),
             new("Profile", "", () => SteamHandoff(Steam.Links.Profile, "Profile")),
-            new("Trophies", "", () => SteamHandoff(Steam.Links.Achievements, "Trophies"),
+            new("Trophies", "", TrophiesScreen.Open,
                 Geometry.Parse("M14,4 H42 V14 C42,26 34,32 28,33 C22,32 14,26 14,14 Z M14,8 H6 C6,18 10,22 15,22 M42,8 H50 C50,18 46,22 41,22 M28,33 V42 M18,50 H38 L36,42 H20 Z")),
             new("Settings", "", () => Shell.Push(SettingsScreens.Root())),
             new("Power", "", PowerMenu.Show),

@@ -1,0 +1,31 @@
+using OrbisUI.Input;
+using OrbisUI.Library;
+using OrbisUI.Services;
+
+namespace OrbisUI.UI;
+
+/// <summary>Trophies: your RetroAchievements from emulated games, plus Steam achievements in Steam. Without a RetroAchievements key it opens Steam's.</summary>
+public static class TrophiesScreen
+{
+    public static void Open()
+    {
+        if (!RetroAchievements.Configured) { HomeScreen.SteamHandoff(Steam.Links.Achievements, "Trophies"); return; }
+        Shell.Toast("Trophies", "Loading your RetroAchievements…", "");
+        _ = Task.Run(async () =>
+        {
+            var (points, recent) = await RetroAchievements.LoadAsync();
+            Shell.Window.Dispatcher.Invoke(() =>
+            {
+                var items = recent.Select(t => new ListItem
+                {
+                    Glyph = t.Hardcore ? "" : "", Label = t.Title,
+                    Sub = () => $"{t.Game} ({t.Console})  ·  {t.Description}", Value = () => $"{t.Points} pts   {t.When:MMM d}",
+                }).ToList();
+                if (items.Count == 0) items.Add(new ListItem { Glyph = "", Label = "No trophies in the last 90 days", Sub = () => "Sign in to RetroAchievements inside each emulator to earn them" });
+                items.Add(new ListItem { Glyph = "", Label = "Steam Achievements", Sub = () => "Opens in Steam", Activate = () => HomeScreen.SteamHandoff(Steam.Links.Achievements, "Trophies") });
+                Shell.Push(new ListScreen("Trophies", items, subtitle: $"RetroAchievements  ·  {points:N0} points  ·  {recent.Count} earned in the last 90 days",
+                    hints: new[] { (Btn.Circle, "Back") }));
+            });
+        });
+    }
+}
