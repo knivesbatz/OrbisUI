@@ -59,7 +59,7 @@ public sealed class LibraryService
         ct.ThrowIfCancellationRequested();
         try { list.AddRange(RomScanner.Scan(ct)); } catch (OperationCanceledException) { throw; } catch (Exception ex) { Log.Warn("ROM scan: " + ex.Message); }
         var tRoms = sw.ElapsedMilliseconds - tSteam;
-        list.AddRange(LoadManual());
+        list.AddRange(LoadManual().Where(StillInstalled));
         AttachEmulatorCovers(list);
         Log.Info($"Scan timings: steam {tSteam} ms, roms {tRoms} ms, covers {sw.ElapsedMilliseconds - tSteam - tRoms} ms");
         return list.GroupBy(g => g.Id).Select(g => g.First()).ToList();
@@ -86,6 +86,21 @@ public sealed class LibraryService
                     if (g.LocalArtHint == null && File.Exists(f)) g.LocalArtHint = f;
                 }
         }
+    }
+
+    /// <summary>Added games whose exe, shortcut or Store app is gone are left out of the library (they come back if reinstalled).</summary>
+    internal static bool StillInstalled(Game g)
+    {
+        if (g.Path == null) return true;
+        if (!g.Path.StartsWith(@"shell:AppsFolder\", StringComparison.OrdinalIgnoreCase)) return File.Exists(g.Path);
+        var pfn = g.Path.Split('\\', 2)[1].Split('!')[0];
+        var us = pfn.LastIndexOf('_');
+        if (us < 0) return true;
+        // Installed packages are listed per user as Name_Version_Arch_Resource_PublisherId.
+        using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages");
+        if (k == null) return true;
+        var name = pfn[..us] + "_"; var publisher = "_" + pfn[(us + 1)..];
+        return k.GetSubKeyNames().Any(n => n.StartsWith(name, StringComparison.OrdinalIgnoreCase) && n.EndsWith(publisher, StringComparison.OrdinalIgnoreCase));
     }
 
     public static List<Game> LoadManual()

@@ -163,6 +163,22 @@ public class CoreTests
     }
 
     [Fact]
+    public void Uninstaller_RecyclesRomWithTracksOnly()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "orbis-uninst-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        foreach (var f in new[] { "Game.cue", "Game (Track 1).bin", "Game (Track 2).bin", "Other.cue" }) File.WriteAllText(Path.Combine(dir, f), "");
+        var g = new Game { Id = "emu:PS1:x", Platform = "PS1", Kind = LaunchKind.Emulator, Path = Path.Combine(dir, "Game.cue") };
+        var paths = Services.Uninstaller.RecyclePaths(g).Select(Path.GetFileName).OrderBy(x => x).ToList();
+        Assert.Equal(new[] { "Game (Track 1).bin", "Game (Track 2).bin", "Game.cue" }, paths);
+        Assert.True(Services.Uninstaller.Protected(@"C:\"));
+        Assert.True(Services.Uninstaller.Protected(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)));
+        Assert.False(Services.Uninstaller.Protected(dir));
+        Assert.False(LibraryService.StillInstalled(new Game { Path = Path.Combine(dir, "gone.exe") }));
+        Directory.Delete(dir, true);
+    }
+
+    [Fact]
     public void Lossless_CoversNeedsMostOfTheGame()
     {
         var game = new Native.RECT { Left = 0, Top = 0, Right = 1920, Bottom = 1080 };

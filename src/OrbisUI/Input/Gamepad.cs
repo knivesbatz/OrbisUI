@@ -29,6 +29,9 @@ public sealed unsafe class Gamepad : IDisposable
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern void SDL_CloseGamepad(IntPtr pad);
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern IntPtr SDL_GetGamepadName(IntPtr pad);
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern IntPtr SDL_GetError();
+    [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern ushort SDL_GetGamepadVendor(IntPtr pad);
+    [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern ushort SDL_GetGamepadProduct(IntPtr pad);
+    [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern int SDL_GetGamepadPowerInfo(IntPtr pad, out int percent);
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern bool SDL_SetGamepadLED(IntPtr pad, byte r, byte g, byte b);
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern bool SDL_RumbleGamepad(IntPtr pad, ushort lo, ushort hi, uint ms);
 
@@ -39,6 +42,11 @@ public sealed unsafe class Gamepad : IDisposable
     public volatile bool Foreground = true;
     public bool Available { get; private set; }
     public string? PadName { get; private set; }
+    /// <summary>Battery of the controller that connected last, in percent (-1 unknown); Charging while on USB power.</summary>
+    public int Battery { get; private set; } = -1;
+    public bool Charging { get; private set; }
+    IntPtr _announce;
+    long _announceAt;
 
     readonly Dictionary<uint, IntPtr> _pads = new();
     readonly Thread? _thread;
@@ -83,6 +91,12 @@ public sealed unsafe class Gamepad : IDisposable
         while (_run)
         {
             while (SDL_PollEvent(ev)) Handle(ev);
+            // The battery level arrives with the controller's first input reports, so announce it a moment after connecting.
+            if (_announce != IntPtr.Zero && Environment.TickCount64 >= _announceAt)
+            {
+                if (_pads.ContainsValue(_announce)) { ReadBattery(_announce); Connected?.Invoke(PadName); }
+                _announce = IntPtr.Zero;
+            }
             Thread.Sleep(Foreground ? 8 : 250);
         }
     }
@@ -98,10 +112,10 @@ public sealed unsafe class Gamepad : IDisposable
                 if (pad != IntPtr.Zero)
                 {
                     _pads[which] = pad;
-                    PadName = Marshal.PtrToStringUTF8(SDL_GetGamepadName(pad)) ?? "Controller";
+                    PadName = Name(pad);
+                    _announce = pad; _announceAt = Environment.TickCount64 + 1500;
                     SDL_SetGamepadLED(pad, 0, 40, 255); // PS4 blue
                     Log.Info("Controller connected: " + PadName);
-                    Connected?.Invoke(PadName);
                 }
                 break;
             case EV_REMOVED:
@@ -125,6 +139,21 @@ public sealed unsafe class Gamepad : IDisposable
                 else if (axis == 5) Trigger(v, Btn.R2, 1);
                 break;
         }
+    }
+
+    /// <summary>Sony DualShock 4 (both revisions and the wireless adapter) shows as on the console: "DUALSHOCK 4".</summary>
+    static string Name(IntPtr pad)
+    {
+        if (SDL_GetGamepadVendor(pad) == 0x054C && SDL_GetGamepadProduct(pad) is 0x05C4 or 0x09CC or 0x0BA0) return "DUALSHOCK 4";
+        return Marshal.PtrToStringUTF8(SDL_GetGamepadName(pad)) ?? "Controller";
+    }
+
+    void ReadBattery(IntPtr pad)
+    {
+        // SDL_PowerState: 1 on battery, 3 charging, 4 charged; anything else has no level to show.
+        var state = SDL_GetGamepadPowerInfo(pad, out var p);
+        Battery = state == 4 ? 100 : state is 1 or 3 && p >= 0 ? Math.Min(p, 100) : -1;
+        Charging = state is 3 or 4;
     }
 
     readonly bool[] _trig = new bool[2];

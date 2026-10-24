@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.3 (2026-10-24)
+- Uninstall or Delete from a game's Options: Steam and Microsoft Store games use their own uninstallers, PC games the uninstaller Windows has for them, and ROMs or PS3/PS4/Vita game folders go to the Recycle Bin. Two confirmations come first, each starting on Cancel.
+- Added PC games and Store apps that were uninstalled drop out of the library on the next scan (Steam and ROM games already did).
+- A PS4 controller shows as DUALSHOCK 4, and the notification when it connects (also at start) shows its battery level.
+
 ## 0.4.2 (2026-10-24)
 - Vita3K starts again: the Ally profile no longer writes a setting Vita3K rejects ("Failed to initialise config"), and an existing Vita3K config gets the welcome dialog and live area turned off so games boot straight in.
 - Vita games installed in Vita3K's own data folder (%APPDATA%\Vita3K) now show up in the library.

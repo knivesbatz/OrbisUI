@@ -43,8 +43,10 @@ public static class Program
         var pad = new Gamepad();
         Shell.Pad = pad;
         pad.Button += win.OnPadButton;
+        // Like the console: the controller's name and battery when it connects, then the toast fades out.
         pad.Connected += name => win.Dispatcher.BeginInvoke(() =>
-            Notifications.Post(name != null ? "Controller connected" : "Controller disconnected", name ?? "", ""));
+            Notifications.Post(name ?? "Controller disconnected", name == null ? "" :
+                pad.Battery < 0 ? "Connected" : $"Connected · Battery {pad.Battery}%{(pad.Charging ? " (charging)" : "")}", ""));
 
         // Second launch -> bring this window back.
         ThreadPool.RegisterWaitForSingleObject(wake, (_, _) => win.Dispatcher.BeginInvoke(() =>

@@ -4,7 +4,7 @@ A portable, controller-first PlayStation 4 style home screen for Windows handhel
 
 OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDAPI over USB and Bluetooth, no DS4Windows). It brings Steam, PC games and the PS1/PS2/PS3/PS4/PSP/Vita emulators together in one console-style interface. It is a personal project.
 
-**Latest release:** [v0.4.2](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.4.3](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
 ## Features (implemented)
 
@@ -19,12 +19,14 @@ OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDA
 - PS4 PKG installer in the File Manager: games, updates and DLC extracted for shadPS4
 - Friends and Messages: your Steam friends, who's online and what they're playing; Cross opens a chat in Steam
 - Notifications, power menu, setup wizard, on-screen keyboard
+- DUALSHOCK 4 named as on the console; its battery level shows in the notification when it connects
 
 **Games**
 - Steam games and shortcuts, PC games from .exe, .lnk, .url or Microsoft Store apps, PS1/PS2/PS3/PS4/PSP/Vita games from one ROM folder, multi-disc grouping with a disc picker
 - Game versions: add other exes, shortcuts or Store apps in Game Settings, then pick one before launch
 - SteamGridDB artwork by default (retried after offline starts), controller cover picker, backgrounds after 5 s
 - Launch splash fades in and holds until the game is fullscreen; PS button returns home over a running game
+- Uninstall or Delete in game Options with two confirmations (Steam, Store and registered uninstallers, otherwise the Recycle Bin); uninstalled games leave the library on their own
 - Emulated and added games are added to Steam with SteamGridDB art so they run with the Big Picture overlay
 - Emulators tuned for the Ally by default: Vulkan, no OSD, fast boot (BIOS and splash skipped) and 16:9/720p-class rendering for DuckStation, PCSX2, PPSSPP, RPCS3 and Vita3K, shadPS4 splash off; configs backed up first
 - ReShade in every emulator (Vulkan layer, your shaders); shadPS4 pipeline cache and Bloodborne patches (skip intro, 60 FPS++)

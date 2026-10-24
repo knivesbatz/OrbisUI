@@ -48,9 +48,24 @@ public static class GameMenu
             new() { Glyph = "\uEB9F", Label = "Change Artwork", Activate = () => { Shell.Pop(); Shell.Push(new ArtPickerScreen(g)); } },
             new() { Glyph = "", Label = "Game Settings", Activate = () => { Shell.Pop(); Shell.Push(GameSettings(g)); } },
         };
-        if (g.Kind == LaunchKind.Steam)
-            items.Add(new() { Glyph = "", Label = "Uninstall", Sub = () => "Steam will ask to confirm",
-                Activate = () => { Shell.Pop(); Steam.OpenUrl(Steam.Links.Uninstall(g.SteamAppId!)); } });
+        var plan = Uninstaller.Plan(g);
+        if (plan.kind != Uninstaller.Kind.None)
+        {
+            var verb = plan.kind == Uninstaller.Kind.Recycle ? "Delete" : "Uninstall";
+            // Two separate confirmations, each defaulting to Cancel, before anything is removed.
+            items.Add(new() { Glyph = "", Label = verb, Sub = () => plan.detail, Activate = () =>
+            {
+                Shell.Pop();
+                Shell.Confirm(verb, $"{verb} {LibraryService.DisplayTitle(g)}? {plan.detail}", () =>
+                    Shell.Confirm($"{verb}: are you sure?", $"This removes {LibraryService.DisplayTitle(g)} from this device. Select {verb} again to continue.", () =>
+                    {
+                        try { Uninstaller.Run(g, plan); }
+                        catch (Exception ex) { Log.Warn("Uninstall: " + ex.Message); Notifications.Post($"{verb} failed", ex.Message); return; }
+                        if (g.Id.StartsWith("exe:")) Shell.Library.RemoveManual(g.Id);
+                        _ = Shell.Library.RescanAsync();
+                    }, yesText: verb, noText: "Cancel"), yesText: verb, noText: "Cancel");
+            } });
+        }
         if (g.Id.StartsWith("exe:"))
             items.Add(new() { Glyph = "", Label = "Remove from Library", Activate = () => { Shell.Pop(); Shell.Confirm("Remove", $"Remove {g.Title} from the library? Files are not deleted.", () => { Shell.Library.RemoveManual(g.Id); _ = Shell.Library.RescanAsync(); }); } });
         items.Add(new() { Glyph = "", Label = "Hide from Home", Activate = () => { Shell.Pop(); AppSettings.Current.For(g.Id).Hidden = true; AppSettings.Current.Save(); Shell.Library.NotifyChanged(); } });
