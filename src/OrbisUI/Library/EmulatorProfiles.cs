@@ -16,7 +16,7 @@ public static class EmulatorProfiles
         try { EnsureShadPs4Ally(); } catch (Exception ex) { Log.Warn("shadPS4 Ally profile: " + ex.Message); }
         try { EnsureStarter("PSP", Path.Combine("memstick", "PSP", "SYSTEM", "ppsspp.ini"), PpssppIni); } catch (Exception ex) { Log.Warn("PPSSPP profile: " + ex.Message); }
         try { EnsureStarter("PS3", Path.Combine("config", "config.yml"), Rpcs3Yml); } catch (Exception ex) { Log.Warn("RPCS3 profile: " + ex.Message); }
-        try { EnsureStarter("VITA", "config.yml", Vita3kYml); } catch (Exception ex) { Log.Warn("Vita3K profile: " + ex.Message); }
+        try { EnsureVita3k(); } catch (Exception ex) { Log.Warn("Vita3K profile: " + ex.Message); }
         try { Services.ReShade.EnsureEmulators(); } catch (Exception ex) { Log.Warn("ReShade for emulators: " + ex.Message); }
     }
 
@@ -82,14 +82,38 @@ public static class EmulatorProfiles
         """;
 
     // Vita3K: Vulkan, boot straight into the game (no live area), fullscreen, no welcome dialog or performance overlay.
-    const string Vita3kYml = """
-        backend-renderer: Vulkan
-        boot-apps-full-screen: true
-        show-live-area-screen: false
-        show-welcome: false
-        performance-overlay: false
-        check-for-updates: false
-        """;
+    // Vita3K refuses to start ("Failed to initialise config") on an unknown key or a wrong value type, so only these keys.
+    static readonly (string key, string value)[] Vita3kKeys =
+    {
+        ("backend-renderer", "Vulkan"), ("boot-apps-full-screen", "true"), ("show-live-area-screen", "false"),
+        ("show-welcome", "false"), ("performance-overlay", "false"),
+    };
+
+    /// <summary>Vita3K's welcome dialog blocks a direct game boot, so its own config gets the Ally keys too (after a backup).</summary>
+    static void EnsureVita3k()
+    {
+        var exe = Emulators.ExePath("VITA");
+        if (exe == null) return;
+        var file = Path.Combine(Path.GetDirectoryName(exe)!, "config.yml");
+        if (!File.Exists(file))
+        {
+            AtomicFile.WriteAllText(file, "---\n" + string.Join("\n", Vita3kKeys.Select(k => $"{k.key}: {k.value}")) + "\n...\n");
+            Log.Info($"VITA ROG Ally profile written: {file}");
+            return;
+        }
+        var text = File.ReadAllText(file);
+        var orig = text;
+        // An older OrbisUI starter wrote this key, which stops Vita3K from starting.
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^check-for-updates:[^\r\n]*\r?\n?", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+        foreach (var (key, value) in Vita3kKeys)
+        {
+            var rx = new System.Text.RegularExpressions.Regex($@"^{key}:[^\r\n]*", System.Text.RegularExpressions.RegexOptions.Multiline);
+            text = rx.IsMatch(text) ? rx.Replace(text, $"{key}: {value}", 1) : text.Replace("\n...", $"\n{key}: {value}\n...");
+        }
+        if (text == orig) return;
+        Log.Info("Config backed up to " + Backup(file));
+        AtomicFile.WriteAllText(file, text);
+    }
 
     static string Backup(string file)
     {

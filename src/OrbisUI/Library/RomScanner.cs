@@ -312,15 +312,7 @@ public static partial class RomScanner
         var list = new List<Game>();
         var exe = Emulators.ExePath("VITA");
         if (exe == null) return list;
-        var root = Path.GetDirectoryName(exe)!;
-        var pref = root;
-        var cfg = Path.Combine(root, "config.yml");
-        if (File.Exists(cfg))
-        {
-            var m = Regex.Match(File.ReadAllText(cfg), @"^pref-path:\s*(.+)$", RegexOptions.Multiline);
-            if (m.Success && !string.IsNullOrWhiteSpace(m.Groups[1].Value.Trim().Trim('\'', '"'))) pref = m.Groups[1].Value.Trim().Trim('\'', '"');
-        }
-        foreach (var d in SafeDirs(Path.Combine(pref, "ux0", "app")))
+        foreach (var d in SafeDirs(Path.Combine(Emulators.Vita3kPrefPath(exe), "ux0", "app")))
         {
             var sfo = Path.Combine(d, "sce_sys", "param.sfo");
             if (!File.Exists(sfo)) continue;

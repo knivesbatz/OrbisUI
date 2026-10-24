@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2 (2026-10-24)
+- Vita3K starts again: the Ally profile no longer writes a setting Vita3K rejects ("Failed to initialise config"), and an existing Vita3K config gets the welcome dialog and live area turned off so games boot straight in.
+- Vita games installed in Vita3K's own data folder (%APPDATA%\Vita3K) now show up in the library.
+
 ## 0.4.1 (2026-10-24)
 - Internet Browser: the controller now drives the page (it was ignored while the page was in front), the first D-pad press lands on the search box, and searching from the on-screen keyboard submits Google's search.
 - Internet Browser no longer crashes or strands its window: PS/Home, game launches and Alt+F4 close it cleanly, invalid addresses become a Google search, and a crashed page reloads.

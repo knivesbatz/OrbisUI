@@ -46,6 +46,21 @@ public static class Emulators
     }
 
     /// <summary>Folders searched for emulator installs, most specific first.</summary>
+    /// <summary>Vita3K's data folder (ux0, vs0...): pref-path in its config.yml, else ux0 next to the exe, else its %APPDATA% default.</summary>
+    public static string Vita3kPrefPath(string exe)
+    {
+        var root = Path.GetDirectoryName(exe)!;
+        var cfg = Path.Combine(root, "config.yml");
+        if (File.Exists(cfg))
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(File.ReadAllText(cfg), @"^pref-path:\s*(.+)$", System.Text.RegularExpressions.RegexOptions.Multiline);
+            var v = m.Success ? m.Groups[1].Value.Trim().Trim('\'', '"') : "";
+            if (v.Length > 0) return v;
+        }
+        if (Directory.Exists(Path.Combine(root, "ux0"))) return root;
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Vita3K", "Vita3K");
+    }
+
     public static IEnumerable<string> SearchRoots()
     {
         if (!string.IsNullOrEmpty(AppSettings.Current.EmulatorRoot)) yield return AppSettings.Current.EmulatorRoot!;

@@ -1,4 +1,4 @@
-# Feature status (v0.4.1)
+# Feature status (v0.4.2)
 
 Legend: **Done + tested**: implemented and checked on the ROG Ally or by automated tests. **Done (untested)**: implemented but not exercised end to end yet. **Partial**: works with stated limits. **Not yet**: not implemented.
 
@@ -19,7 +19,7 @@ Legend: **Done + tested**: implemented and checked on the ROG Ally or by automat
 | PlayStation Store metadata | Done + tested | Store web search (no sign-in): square key art, description, publisher, year, genres; LIMBO checked |
 | Launch splash | Done + tested | Fades in and holds until the game window is fullscreen/maximized (at most 10 s after it appears) |
 | Return home / PS button over a running game | Done + tested | |
-| Emulator Ally profiles | Done + tested | Vulkan, no OSD, fast boot for DuckStation, PCSX2, PPSSPP, RPCS3, Vita3K; shadPS4 splash off; configs backed up first. PS1, PS2 and PS3 test ROMs launch and run ; shadPS4 pipeline cache and Bloodborne patches (Bloodborne itself not tested: base game not installed) |
+| Emulator Ally profiles | Done + tested | Vulkan, no OSD, fast boot for DuckStation, PCSX2, PPSSPP, RPCS3, Vita3K; shadPS4 splash off; configs backed up first. 2026-10-24 pass: Silent Hill (PS1), GTA Liberty City Stories (PSP) and LIMBO (PS4) run in-game with Vulkan and ReShade; Minecraft (PS3) boots with firmware 4.92 (gameplay not confirmed); Persona 3 FES (PS2) boots, no picture captured; Gravity Rush (Vita) not confirmed; shadPS4 pipeline cache and Bloodborne patches (Bloodborne itself not tested: base game not installed) |
 | PS4 PKG installer | Done + tested | ShadPs4Plus pkg_extractor: games and updates to shadPS4's games folder, DLC to its add-on folder; the LIMBO test package installed and appeared in the library |
 | File manager | Done + tested | In Settings. Drives and folders, copy, move, rename, new folder, delete to the Recycle Bin, open files, install .pkg |
 | Internet browser | Done + tested | WebView2, D-pad link navigation, Google by default |

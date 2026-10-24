@@ -4,7 +4,7 @@ A portable, controller-first PlayStation 4 style home screen for Windows handhel
 
 OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDAPI over USB and Bluetooth, no DS4Windows). It brings Steam, PC games and the PS1/PS2/PS3/PS4/PSP/Vita emulators together in one console-style interface. It is a personal project.
 
-**Latest release:** [v0.4.1](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.4.2](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
 ## Features (implemented)
 
@@ -29,6 +29,7 @@ OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDA
 - Emulators tuned for the Ally by default: Vulkan, no OSD, fast boot (BIOS and splash skipped) and 16:9/720p-class rendering for DuckStation, PCSX2, PPSSPP, RPCS3 and Vita3K, shadPS4 splash off; configs backed up first
 - ReShade in every emulator (Vulkan layer, your shaders); shadPS4 pipeline cache and Bloodborne patches (skip intro, 60 FPS++)
 - PlayStation Store metadata for PlayStation games; Trophies shows your RetroAchievements
+- PCSX2 widescreen and no-interlace patches and DuckStation's widescreen hack on by default
 - Per-game ReShade preset, Lossless Scaling auto-activation with a "PRO Mode Active" notification
 - Controller Fixer: find and install PlayStation button prompt mods with backup and undo
 
@@ -38,10 +39,16 @@ OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDA
 - Portable folder, DPAPI-encrypted keys, low idle CPU, GitHub auto-updater with SHA-256 checks
 
 ## Next update (TODO)
-1. On-device check of Lossless Scaling detection with a real game (#20)
-2. shadPS4 that starts without a big page file (patched build in progress); then Bloodborne once the base game is installed
-3. Texture packs: no trusted source to download them from (#27)
-4. Native Bluetooth pairing (#19)
+Only open work is listed here; everything shipped is under Features.
+1. Bloodborne: install the base game and the 1.09 update (configs and patches are ready)
+2. Lossless Scaling: check detection with a real game on the Ally (#20)
+3. Bluetooth: pairing still opens Windows Settings instead of a native pairing screen (#19)
+4. PSP test ROM is a .7z, which PPSSPP can't open; it runs once extracted to .iso
+5. Internet Browser: check it with the Ally's physical buttons
+6. RPCS3 showed an error during a firmware install test; Minecraft (PS3) boots with firmware 4.92 but gameplay isn't confirmed yet (first-run shader build)
+7. Finish the emulator test pass: Persona 3 FES (PS2) boots but no picture was captured, Gravity Rush (Vita) boot not confirmed
+8. SONYRESOURCES backup folder: drop it into a new OrbisUI folder to restore emulators, firmware and media (folder built, auto-import unfinished)
+9. Texture packs: no trusted source to download them from (#27)
 
 ## Install (portable)
 
