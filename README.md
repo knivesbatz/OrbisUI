@@ -1,8 +1,22 @@
 # OrbisUI
 
-A portable, controller-first PlayStation 4 style home screen for Windows handhelds, built and tuned for the ASUS ROG Ally.
+**A PlayStation 4 style home screen for Windows gaming handhelds.** OrbisUI turns a Windows PC, built and tuned for the ASUS ROG Ally, into something that looks, sounds and feels like a PS4: you pick up a DualShock 4, press the PS button and browse all your games from one console-style menu, without touching the Windows desktop.
 
-OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDAPI over USB and Bluetooth, no DS4Windows). It brings Steam, PC games and the PS1/PS2/PS3/PS4/PSP/Vita emulators together in one console-style interface. It is a personal project.
+![OrbisUI home screen tour](docs/screenshots/home-tour.gif)
+
+**What it does**
+- One library for everything: Steam games, other PC games and Microsoft Store apps, and PS1, PS2, PS3, PS4, PSP and Vita games through their emulators (DuckStation, PCSX2, RPCS3, shadPS4, PPSSPP, Vita3K).
+- Square cover art fetched automatically, plus descriptions from the PlayStation Store.
+- Press Start and the game launches fullscreen. The PS button brings you back home, even while a game or emulator is running.
+- Controller first: native DualShock 4 support over USB or Bluetooth, no DS4Windows needed. Keyboard works too.
+- Console-style extras: notifications, friends from Steam, trophies from RetroAchievements, a web browser, a file manager, Wi-Fi, audio and display settings, and a PS4 PKG installer.
+
+It is a free, portable app (unzip and run, no installer) and a personal fan project. It is not affiliated with or endorsed by Sony Interactive Entertainment. No Sony files, firmware or games are included; you add your own sound and icon packs, BIOS files and games.
+
+| | |
+|---|---|
+| ![Home with game art and background](docs/screenshots/home-bg.png) | ![Function row](docs/screenshots/fn.png) |
+| ![Library](docs/screenshots/library.png) | ![Game options](docs/screenshots/options.png) |
 
 **Latest release:** [v0.4.3](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
