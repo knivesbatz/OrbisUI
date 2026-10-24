@@ -1,4 +1,4 @@
-# Feature status (v0.4.0)
+# Feature status (v0.4.1)
 
 Legend: **Done + tested**: implemented and checked on the ROG Ally or by automated tests. **Done (untested)**: implemented but not exercised end to end yet. **Partial**: works with stated limits. **Not yet**: not implemented.
 

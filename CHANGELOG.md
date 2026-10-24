@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.1 (2026-10-24)
 - Internet Browser: the controller now drives the page (it was ignored while the page was in front), the first D-pad press lands on the search box, and searching from the on-screen keyboard submits Google's search.
 - Internet Browser no longer crashes or strands its window: PS/Home, game launches and Alt+F4 close it cleanly, invalid addresses become a Google search, and a crashed page reloads.
 
