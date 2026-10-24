@@ -14,7 +14,7 @@ namespace OrbisUI.UI;
 
 /// <summary>
 /// The home screen: info bar, the content row of square tiles with the focused one enlarged, its title beside it,
-/// and the function area above (Up) with Store, Notifications, Friends, Messages, Profile, Trophies, Settings and Power.
+/// and the function area (Up): the row drops to the bottom edge and a row of large icons appears, like the console.
 /// </summary>
 public sealed class HomeScreen : Screen
 {
@@ -39,14 +39,15 @@ public sealed class HomeScreen : Screen
     readonly Image _avatar = new() { Width = 40, Height = 40 };
     readonly TextBlock _noticeCount = UiKit.Label("", 18);
     readonly TextBlock _fnLabel = UiKit.Label("", 26);
-    readonly Grid _fnLayer = new() { IsHitTestVisible = false };
-    readonly Border _fnFocus = UiKit.FocusFrame(2);
+    readonly Canvas _fnLayer = new() { Width = UiKit.W, Height = UiKit.H, IsHitTestVisible = false, Opacity = 0 };
+    readonly TranslateTransform _fnShift = new();
+    readonly List<(FrameworkElement el, ScaleTransform s)> _fnIcons = new();
     readonly DispatcherTimer _clockTimer;
 
     List<HomeItem> _items = new();
     int _sel;
     bool _fnMode;
-    int _fnSel = 6;
+    int _fnSel = 1;
 
     record Fn(string Name, string Glyph, Action Go, Geometry? Shape = null);
     static readonly Dictionary<string, string> FnIcon = new()
@@ -166,16 +167,37 @@ public sealed class HomeScreen : Screen
         if (_avatar.Source == null) _avatar.Visibility = Visibility.Collapsed;
     }
 
-    // The function icons are the status bar icons themselves: Up only moves a highlight onto them, nothing moves.
-    static readonly (double x, double w)[] FnRects = { (96, 30), (192, 34), (650, 36), (730, 36), (800, 0), (1306, 36), (1400, 36), (1490, 36) };
+    // The function area, as in the PS4 menu tour: Up hides the status bar (the clock stays), slides the home row down to
+    // the bottom edge with every tile small, and a row of large white icons comes down to about two thirds of the screen.
+    // The selected icon is bigger with its name under it. Geometry from the tour at 1280x720, scaled to the 1920x1080 stage.
+    const double FnY = 733, FnLeft = 170, FnRight = 1749, FnIcon_ = 72, FnSelScale = 1.45, FnRowDrop = 674;
+
+    double FnX(int i) => FnLeft + i * (FnRight - FnLeft) / Math.Max(1, _fns.Count - 1);
 
     void BuildFunctionArea()
     {
-        _fnFocus.Visibility = Visibility.Hidden; _fnLabel.Visibility = Visibility.Hidden;
-        _fnFocus.HorizontalAlignment = HorizontalAlignment.Left; _fnFocus.VerticalAlignment = VerticalAlignment.Top;
-        _fnLayer.Children.Add(_fnFocus);
-        _fnLabel.FontSize = 22;
-        _fnLabel.HorizontalAlignment = HorizontalAlignment.Left; _fnLabel.VerticalAlignment = VerticalAlignment.Top;
+        _fnLayer.RenderTransform = _fnShift;
+        for (int i = 0; i < _fns.Count; i++)
+        {
+            var fn = _fns[i];
+            FrameworkElement icon = fn.Name == "Profile" && _avatar.Source != null
+                ? new Image { Source = _avatar.Source, Width = FnIcon_ * 0.8, Height = FnIcon_ * 0.8 }
+                : fn.Shape != null ? new Path { Data = fn.Shape, Fill = UiKit.Text, Stretch = Stretch.Uniform, Width = FnIcon_ * 0.8, Height = FnIcon_ * 0.8 }
+                : FnIcon.TryGetValue(fn.Name, out var key) && IconPack.Get(key) is ImageSource img ? new Image { Source = img, Width = FnIcon_, Height = FnIcon_ }
+                : UiKit.Glyph(fn.Glyph, FnIcon_ * 0.75);
+            var holder = new Grid { Width = FnIcon_, Height = FnIcon_ };
+            icon.HorizontalAlignment = HorizontalAlignment.Center; icon.VerticalAlignment = VerticalAlignment.Center;
+            holder.Children.Add(icon);
+            var s = new ScaleTransform(1, 1);
+            holder.RenderTransformOrigin = new Point(0.5, 0.5);
+            holder.RenderTransform = s;
+            Canvas.SetLeft(holder, FnX(i) - FnIcon_ / 2); Canvas.SetTop(holder, FnY - FnIcon_ / 2);
+            _fnLayer.Children.Add(holder);
+            _fnIcons.Add((holder, s));
+        }
+        _fnLabel.Width = 400;
+        _fnLabel.TextAlignment = TextAlignment.Center;
+        Canvas.SetTop(_fnLabel, FnY + FnIcon_ * FnSelScale / 2 + 8);
         _fnLayer.Children.Add(_fnLabel);
         Children.Add(_fnLayer);
     }
@@ -242,7 +264,7 @@ public sealed class HomeScreen : Screen
         : FocusX + (AllSmall ? Small : Big + 3) + Gap + (i - _sel - 1) * (Small + Gap);
 
     /// <summary>In the function area and inside a folder the home row shows every tile small, like the console.</summary>
-    bool AllSmall => _subSel >= 0;
+    bool AllSmall => _subSel >= 0 || _fnMode;
 
     void Layout(bool animate, bool details = true)
     {
@@ -451,25 +473,30 @@ public sealed class HomeScreen : Screen
         if (_fnMode == on) return;
         _fnMode = on;
         Play(on ? Sfx.Enter : Sfx.Back);
-        // Up highlights the header icons where they are; the row just dims.
-        UiKit.Animate(_row, OpacityProperty, on ? 0.6 : 1, 200);
-        _fnFocus.Visibility = _fnLabel.Visibility = on ? Visibility.Visible : Visibility.Hidden;
-        _focus.Visibility = on ? Visibility.Hidden : Visibility.Visible;
-        _startBar.Visibility = _focus.Visibility;
-        PlaceFn();
+        const int ms = 300;
+        // The home row drops to the bottom edge with every tile small; the status bar fades, the function row comes down.
+        UiKit.Animate(_rowShift, TranslateTransform.YProperty, on ? FnRowDrop : 0, ms);
+        foreach (var el in new UIElement[] { _statusIcons, _titleBlock, _startBar, _focus }) UiKit.Animate(el, OpacityProperty, on ? 0 : 1, ms / 2);
+        UiKit.Animate(_fnLayer, OpacityProperty, on ? 1 : 0, ms);
+        _fnShift.Y = on ? -120 : 0;
+        UiKit.Animate(_fnShift, TranslateTransform.YProperty, on ? 0 : -120, ms);
+        Layout(true, details: false);
+        PlaceFn(false);
         ApplyBackground();
     }
 
-    void PlaceFn()
+    void PlaceFn(bool animate = true)
     {
-        var (x, w) = FnRects[_fnSel];
-        if (w == 0) { _user.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); w = 18 + 40 + 12 + _user.DesiredSize.Width; }
-        _fnFocus.Width = w + 24; _fnFocus.Height = 60;
-        _fnFocus.Margin = new Thickness(x - 12, BarY - 30, 0, 0);
+        for (int i = 0; i < _fnIcons.Count; i++)
+        {
+            var (el, s) = _fnIcons[i];
+            double sc = i == _fnSel ? FnSelScale : 1;
+            if (animate) { UiKit.Animate(s, ScaleTransform.ScaleXProperty, sc, 120); UiKit.Animate(s, ScaleTransform.ScaleYProperty, sc, 120); }
+            else { s.BeginAnimation(ScaleTransform.ScaleXProperty, null); s.BeginAnimation(ScaleTransform.ScaleYProperty, null); s.ScaleX = s.ScaleY = sc; }
+            el.Opacity = i == _fnSel ? 1 : 0.85;
+        }
         _fnLabel.Text = _fns[_fnSel].Name;
-        _fnLabel.Width = 400;
-        _fnLabel.TextAlignment = TextAlignment.Center;
-        _fnLabel.Margin = new Thickness(x + w / 2 - 200, BarY + 36, 0, 0);
+        Canvas.SetLeft(_fnLabel, FnX(_fnSel) - 200);
     }
     public override bool OnInput(Btn b)
     {
