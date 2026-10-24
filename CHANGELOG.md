@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 (2026-10-23)
+- Up on the home screen works like the console: the status bar hides, the home row drops to the bottom and a row of large function icons appears, with the selected one enlarged and named.
+- PlayStation Store is a metadata source for PlayStation games: square key art, description, publisher, year and genres.
+- ReShade runs in every emulator through its Vulkan layer, using your shaders and settings (FPS counter off).
+- Trophies shows your RetroAchievements points and recent trophies (add your user name and Web API key in Settings > Accounts and Services).
+- shadPS4: pipeline cache on; Bloodborne gets Skip Intro, 60 FPS++ and no chromatic aberration or motion blur (game update 1.09).
+
 ## 0.3.1 (2026-10-23)
 - File Manager moved from the home row into Settings.
 

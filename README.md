@@ -4,12 +4,12 @@ A portable, controller-first PlayStation 4 style home screen for Windows handhel
 
 OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDAPI over USB and Bluetooth, no DS4Windows). It brings Steam, PC games and the PS1/PS2/PS3/PS4/PSP/Vita emulators together in one console-style interface. It is a personal project.
 
-**Latest release:** [v0.3.1](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.4.0](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
 ## Features (implemented)
 
 **Console experience**
-- PS4 home: status bar (PS Plus, notifications, messages, friends, your Steam avatar and name, trophies, settings, power, clock), square tiles with the enlarged selection and Start bar; Up highlights the header icons in place
+- PS4 home: status bar (PS Plus, notifications, messages, friends, your Steam avatar and name, trophies, settings, power, clock), square tiles with the enlarged selection and Start bar; Up drops the row to the bottom and opens the function row like the console
 - PlayStation Store and What's New tiles; What's New is an activity feed of you and your Steam friends (friends need a Steam Web API key)
 - Live video background, boot video that fades into home (PS skips it) and home music, from your own media in `Data\Media`
 - PS4 sound pack and icon pack (your files; repaired WAV headers), royal-blue theme, everything square-cornered
@@ -27,6 +27,8 @@ OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDA
 - Launch splash fades in and holds until the game is fullscreen; PS button returns home over a running game
 - Emulated and added games are added to Steam with SteamGridDB art so they run with the Big Picture overlay
 - Emulators tuned for the Ally by default: Vulkan, no OSD, fast boot (BIOS and splash skipped) and 16:9/720p-class rendering for DuckStation, PCSX2, PPSSPP, RPCS3 and Vita3K, shadPS4 splash off; configs backed up first
+- ReShade in every emulator (Vulkan layer, your shaders); shadPS4 pipeline cache and Bloodborne patches (skip intro, 60 FPS++)
+- PlayStation Store metadata for PlayStation games; Trophies shows your RetroAchievements
 - Per-game ReShade preset, Lossless Scaling auto-activation with a "PRO Mode Active" notification
 - Controller Fixer: find and install PlayStation button prompt mods with backup and undo
 
@@ -36,11 +38,10 @@ OrbisUI is a native WPF (.NET 10) shell with native DualShock 4 input (SDL3/HIDA
 - Portable folder, DPAPI-encrypted keys, low idle CPU, GitHub auto-updater with SHA-256 checks
 
 ## Next update (TODO)
-1. ReShade in every emulator folder: needs ReShade downloaded from reshade.me once (#13)
-2. On-device check of Lossless Scaling detection with a real game (#20)
-3. RetroAchievements sign-in inside OrbisUI and texture packs (#27); use each emulator's own login for now
+1. On-device check of Lossless Scaling detection with a real game (#20)
+2. Bloodborne check once the base game is installed (its DLC is already there)
+3. Texture packs: no trusted source to download them from (#27)
 4. Native Bluetooth pairing (#19)
-5. PlayStation Store metadata: blocked, Sony has no public PlayStation Store API (#8)
 
 ## Install (portable)
 
@@ -76,7 +77,7 @@ The public package contains no Sony media. Built-in tones and vector icons are u
 | ✕ | Enter / Space | Select, start a game |
 | ○ | Esc / Backspace | Back |
 | △ / OPTIONS | F3 / Tab | Game options (artwork, settings, hide, uninstall) |
-| Up on the home row | Up | Highlight the header icons (Store, Notifications, Messages, Friends, Profile, Trophies, Settings, Power) |
+| Up on the home row | Up | Function row: Store, Notifications, Messages, Friends, Profile, Trophies, Settings, Power |
 | Down on TV & Video | Down | Its apps |
 | L1 / R1 | Page Up / Down | Jump |
 | PS button | Home | Home screen. While an emulator or PC game runs it brings the home screen back over the game |
