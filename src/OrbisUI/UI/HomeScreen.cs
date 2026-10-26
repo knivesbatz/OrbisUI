@@ -599,6 +599,8 @@ public sealed class HomeScreen : Screen
         switch (b)
         {
             case Btn.Down when _items[_sel].Folder is { Apps.Count: > 0 }: _subSel = 0; Play(Sfx.Cursor); PlaceSub(); return true;
+            // Down into the Trophies card opens the game's full trophy list, like the console.
+            case Btn.Down when _items[_sel].Game is Game tg && GameProgress.TryCached(tg, out var tp) && tp is { All.Count: > 0 }: Play(Sfx.Decide); TrophiesScreen.ForGame(tg, tp); return true;
             case Btn.Left: Move(-1); return true;
             case Btn.Right: Move(1); return true;
             case Btn.L1: Move(-5); return true;

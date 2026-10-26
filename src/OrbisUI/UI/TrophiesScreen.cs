@@ -28,4 +28,17 @@ public static class TrophiesScreen
             });
         });
     }
+    static readonly string[] Grades = { "Platinum", "Gold", "Silver", "Bronze" };
+
+    /// <summary>One game's trophies: icon, name, description, grade, and the date earned or Locked.</summary>
+    public static void ForGame(Game g, GameProgress.Progress p)
+    {
+        var items = p.All.Select(t => new ListItem
+        {
+            Image = t.Icon, Label = t.Name, Sub = () => t.Description,
+            Value = () => Grades[t.Grade] + "   " + (t.When is DateTime w ? w.ToString("MMM d, yyyy") : "Locked"),
+        });
+        Shell.Push(new ListScreen(LibraryService.DisplayTitle(g), items, subtitle: $"Trophies  ·  {p.Percent}%  ·  {p.All.Count(t => t.When.HasValue)} of {p.All.Count} earned",
+            hints: new[] { (Btn.Circle, "Back") }));
+    }
 }

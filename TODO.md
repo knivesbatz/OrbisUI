@@ -3,7 +3,6 @@
 Open work only; everything implemented is listed in the README's Features section and in [FEATURES.md](FEATURES.md). Items map to [GitHub issues](https://github.com/knivesbatz/OrbisUI/issues) where one exists.
 
 1. Bloodborne: install the base game and the 1.09 update, then test (configs and patches are ready)
-2. Trophies: Down on the home Trophies card opens that game's full trophy list (icon, name, description, grade, earned/locked, date) from Steam achievements or RetroAchievements, like the PS4 per-game Trophies list (menu tour 4:40)
 3. Bluetooth: native pairing; it still opens Windows Bluetooth settings (#19)
 4. PSP test ROM is a .7z, which PPSSPP can't open; keep an extracted .iso for tests
 5. Internet Browser: check it with the Ally's physical buttons

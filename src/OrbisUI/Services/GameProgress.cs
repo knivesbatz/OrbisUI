@@ -13,9 +13,11 @@ namespace OrbisUI.Services;
 public static class GameProgress
 {
     /// <summary>Grade: 0 platinum, 1 gold, 2 silver, 3 bronze.</summary>
-    public sealed record Trophy(string Name, string? Icon, int Grade, DateTime When);
+    /// <summary>When is null for a locked trophy.</summary>
+    public sealed record Trophy(string Name, string? Icon, int Grade, DateTime? When, string Description = "");
     public sealed record Friend(string Name, string? Avatar, int Percent, bool PlayingNow);
-    public sealed record Progress(int Percent, int[] Earned, Trophy? Recent, List<Friend> Friends);
+    /// <param name="All">Every trophy of the game, earned (newest first) then locked.</param>
+    public sealed record Progress(int Percent, int[] Earned, Trophy? Recent, List<Friend> Friends, List<Trophy> All);
 
     static readonly Dictionary<string, (DateTime at, Progress? p)> _cache = new();
 
@@ -56,11 +58,12 @@ public static class GameProgress
         var mine = await SteamAchieved(key, me, app);
         if (mine == null || mine.Count == 0) return null; // no achievements, or the game isn't on this account
 
-        var schema = new Dictionary<string, (string name, string? icon)>();
+        var schema = new Dictionary<string, (string name, string? icon, string? gray, string desc)>();
         using (var d = await SteamActivity.Get($"ISteamUserStats/GetSchemaForGame/v2/?key={key}&appid={app}&l=english"))
             if (d?.RootElement.GetProperty("game").TryGetProperty("availableGameStats", out var st) == true && st.TryGetProperty("achievements", out var achs))
                 foreach (var a in achs.EnumerateArray())
-                    schema[a.GetProperty("name").GetString()!] = (a.TryGetProperty("displayName", out var n) ? n.GetString()! : "", a.TryGetProperty("icon", out var i) ? i.GetString() : null);
+                    schema[a.GetProperty("name").GetString()!] = (a.TryGetProperty("displayName", out var n) ? n.GetString()! : "", a.TryGetProperty("icon", out var i) ? i.GetString() : null,
+                        a.TryGetProperty("icongray", out var ig) ? ig.GetString() : null, a.TryGetProperty("description", out var de) ? de.GetString() ?? "" : "");
 
         var rarity = new Dictionary<string, double>();
         using (var d = await SteamActivity.Get($"ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid={app}"))
@@ -79,6 +82,12 @@ public static class GameProgress
             schema.TryGetValue(m.Key, out var s) && s.name.Length > 0 ? s.name : m.Key, schema.GetValueOrDefault(m.Key).icon,
             GradeFromRarity(rarity.GetValueOrDefault(m.Key, 50)), m.Value!.Value)).FirstOrDefault();
 
+        var list = mine.Select(m =>
+        {
+            var s = schema.GetValueOrDefault(m.Key);
+            return new Trophy(s.name is { Length: > 0 } ? s.name : m.Key, m.Value.HasValue ? s.icon : s.gray ?? s.icon, GradeFromRarity(rarity.GetValueOrDefault(m.Key, 50)), m.Value, s.desc ?? "");
+        }).OrderByDescending(t => t.When.HasValue).ThenByDescending(t => t.When).ToList();
+
         // Friends who have this game on a public profile; the ones playing it now first. Four requests at a time.
         var all = await SteamActivity.FriendsAsync();
         var playing = all.Where(f => f.GameId == app).ToList();
@@ -94,7 +103,7 @@ public static class GameProgress
             finally { gate.Release(); }
         }))).OfType<Friend>().OrderByDescending(f => f.PlayingNow).ThenByDescending(f => f.Percent).Take(3).ToList();
 
-        return new Progress(Pct(got.Count, mine.Count), earned, recent, friends);
+        return new Progress(Pct(got.Count, mine.Count), earned, recent, friends, list);
     }
 
     /// <summary>apiname -> unlock time (null when locked); null when the profile is private or doesn't own the game.</summary>
@@ -135,7 +144,9 @@ public static class GameProgress
         foreach (var a in got) earned[GradeFromPoints(a.points)]++;
         if (got.Count == mine.Count) earned[0] = 1;
         var r0 = got.OrderByDescending(a => a.when).FirstOrDefault();
-        Trophy? recent = r0.name == null ? null : new Trophy(r0.name, r0.badge, GradeFromPoints(r0.points), r0.when!.Value);
+        Trophy? recent = r0.name == null ? null : new Trophy(r0.name, r0.badge, GradeFromPoints(r0.points), r0.when!.Value, r0.desc);
+        var all = mine.Select(a => new Trophy(a.name, a.when.HasValue ? a.badge : a.badge.Replace(".png", "_lock.png"), GradeFromPoints(a.points), a.when, a.desc))
+            .OrderByDescending(t => t.When.HasValue).ThenByDescending(t => t.When).ToList();
 
         var friends = new List<Friend>();
         using (var d = await RetroAchievements.Get("API_GetUsersIFollow", "c=20"))
@@ -147,21 +158,21 @@ public static class GameProgress
                     int n = theirs?.Count(a => a.when.HasValue) ?? 0;
                     if (n > 0) friends.Add(new Friend(name, $"https://media.retroachievements.org/UserPic/{Uri.EscapeDataString(name)}.png", Pct(n, theirs!.Count), false));
                 }
-        return new Progress(Pct(got.Count, mine.Count), earned, recent, friends.OrderByDescending(f => f.Percent).Take(3).ToList());
+        return new Progress(Pct(got.Count, mine.Count), earned, recent, friends.OrderByDescending(f => f.Percent).Take(3).ToList(), all);
     }
 
-    static async Task<List<(string name, int points, string badge, DateTime? when)>?> RaGame(int game, string user)
+    static async Task<List<(string name, int points, string badge, DateTime? when, string desc)>?> RaGame(int game, string user)
     {
         using var d = await RetroAchievements.Get("API_GetGameInfoAndUserProgress", $"g={game}&u={Uri.EscapeDataString(user)}");
         if (d == null || !d.RootElement.TryGetProperty("Achievements", out var achs) || achs.ValueKind != JsonValueKind.Object) return null;
-        var list = new List<(string, int, string, DateTime?)>();
+        var list = new List<(string, int, string, DateTime?, string)>();
         foreach (var p in achs.EnumerateObject())
         {
             var a = p.Value;
             string S(string k) => a.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : "";
             int pts = a.TryGetProperty("Points", out var pv) && pv.ValueKind == JsonValueKind.Number ? pv.GetInt32() : 0;
             var date = S("DateEarnedHardcore").Length > 0 ? S("DateEarnedHardcore") : S("DateEarned");
-            list.Add((S("Title"), pts, $"https://media.retroachievements.org/Badge/{S("BadgeName")}.png", DateTime.TryParse(date, out var w) ? w : null));
+            list.Add((S("Title"), pts, $"https://media.retroachievements.org/Badge/{S("BadgeName")}.png", DateTime.TryParse(date, out var w) ? w : null, S("Description")));
         }
         return list;
     }

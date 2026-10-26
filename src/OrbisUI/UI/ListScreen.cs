@@ -9,6 +9,8 @@ namespace OrbisUI.UI;
 public sealed class ListItem
 {
     public string Glyph { get; init; } = "";
+    /// <summary>A picture (file or https URL) shown instead of the glyph, such as a trophy icon.</summary>
+    public string? Image { get; init; }
     public required string Label { get; init; }
     public Func<string?>? Sub { get; init; }
     public Func<string?>? Value { get; init; }
@@ -150,7 +152,9 @@ public class ListScreen : Screen
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(page ? 98 : 64) });
         g.ColumnDefinitions.Add(new ColumnDefinition());
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var icon = UiKit.Glyph(it.Glyph, page ? 36 : 26);
+        FrameworkElement icon = it.Image != null && Uri.TryCreate(it.Image, UriKind.Absolute, out var iu)
+            ? new System.Windows.Controls.Image { Source = new System.Windows.Media.Imaging.BitmapImage(iu) { DecodePixelWidth = 64 }, Width = _rowH - 20, Height = _rowH - 20 }
+            : UiKit.Glyph(it.Glyph, page ? 36 : 26);
         icon.HorizontalAlignment = HorizontalAlignment.Center;
         g.Children.Add(icon);
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };

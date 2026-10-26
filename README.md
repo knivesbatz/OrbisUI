@@ -24,7 +24,7 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 
 **Console experience**
 - PS4 home: status bar (PS Plus, notifications, messages, friends, your Steam avatar and name, trophies, settings, power, clock), square tiles with the enlarged selection and Start bar; Up drops the row to the bottom and opens the function row like the console
-- Trophies and Friends cards under the selected game: progress, grade counts, most recent trophy and friends' progress (Steam achievements or RetroAchievements)
+- Trophies and Friends cards under the selected game: progress, grade counts, most recent trophy and friends' progress (Steam achievements or RetroAchievements); press Down for the game's full trophy list (icon, name, description, grade, date or Locked)
 - PlayStation Store and What's New tiles; What's New is an activity feed of you and your Steam friends (friends need a Steam Web API key)
 - Live video background, boot video that fades into home (PS skips it) and home music, from your own media in `Data\Media`
 - PS4 sound pack and icon pack (your files; repaired WAV headers), colour themes like the console's (Settings > Themes, royal blue by default, also tints the boot video), everything square-cornered
@@ -59,7 +59,6 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 ## Next update (TODO)
 Only open work is listed here; everything shipped is under Features.
 1. Bloodborne: install the base game and the 1.09 update (configs and patches are ready)
-2. Trophies: press Down on the home Trophies card to open the game's full trophy list (icon, name, description, grade, earned or locked, date)
 3. Bluetooth: pairing still opens Windows Settings instead of a native pairing screen (#19)
 4. PSP test ROM is a .7z, which PPSSPP can't open; it runs once extracted to .iso
 5. Internet Browser: check it with the Ally's physical buttons
