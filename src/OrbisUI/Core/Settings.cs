@@ -75,8 +75,9 @@ public sealed class AppSettings
     // UI sounds are always on (user rule); a saved "false" from older versions is ignored.
     public bool UiSounds { get => true; set { } }
     public double UiVolume { get; set; } = 0.7;
-    public bool HomeMusic { get; set; } = true;
-    public double MusicVolume { get; set; } = 0.4;
+    // Home music is always on at the default volume (user rule); saved values from older versions are ignored.
+    public bool HomeMusic { get => true; set { } }
+    public double MusicVolume { get => 0.4; set { } }
     public bool ConfirmWithCircle { get; set; }
 
     // Steam
