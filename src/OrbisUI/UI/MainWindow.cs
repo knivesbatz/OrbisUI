@@ -153,6 +153,7 @@ public sealed class MainWindow : Window
                 if (raw == "browser" || raw.StartsWith("browser:")) { Shell.Push(raw.Length > 8 ? new BrowserScreen(raw[8..]) : new BrowserScreen()); continue; }
                 if (raw == "settings") { Shell.Push(SettingsScreens.Root()); continue; }
                 if (raw == "trophies") { TrophiesScreen.Open(); continue; }
+                if (raw == "library") { Shell.Push(new LibraryScreen()); continue; }
                 if (raw == "friends") { FriendsScreen.Open(false); continue; }
                 if (raw.StartsWith("launch:")) { StartGame(Shell.Library.Games.First(g => g.Title.Contains(raw[7..], StringComparison.OrdinalIgnoreCase))); continue; }
                 if (raw == "gametoast") { GameToast.Show("PRO Mode Active", "Frame generation is on for this game.", "\uE945"); continue; }
