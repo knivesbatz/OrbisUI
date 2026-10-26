@@ -59,7 +59,9 @@ public class ListScreen : Screen
         if (side)
         {
             // Measured from the menu tour (8:44): panel from x 1352, first row centred at y 280, rows 74 px apart.
-            _focus.BorderBrush = Brushes.White; _focus.BorderThickness = new Thickness(2); _focus.Effect = null;
+            // The rest of the screen stays visible but dimmed; the focused row gets the light-blue outline.
+            Background = UiKit.B("#66000814");
+            _focus.BorderThickness = new Thickness(2);
             _focus.Width = listW; _focus.Height = _rowH + 6;
             viewport.Margin = new Thickness(8, 280 - _rowH / 2 - 6, 0, 0);
             viewport.Height = _viewH + 12;

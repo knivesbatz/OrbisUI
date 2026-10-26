@@ -44,9 +44,6 @@ public static class GameMenu
         var items = new List<ListItem>
         {
             new() { Glyph = "", Label = "Start", Activate = () => { Shell.Pop(); Shell.Window.StartGame(g); } },
-            new() { Glyph = "", Label = "Information", Activate = () => { Shell.Pop(); Shell.Push(InfoScreen(g)); } },
-            new() { Glyph = "\uEB9F", Label = "Change Artwork", Activate = () => { Shell.Pop(); Shell.Push(new ArtPickerScreen(g)); } },
-            new() { Glyph = "", Label = "Game Settings", Activate = () => { Shell.Pop(); Shell.Push(GameSettings(g)); } },
         };
         var plan = Uninstaller.Plan(g);
         if (plan.kind != Uninstaller.Kind.None)
@@ -69,6 +66,10 @@ public static class GameMenu
         if (g.Id.StartsWith("exe:"))
             items.Add(new() { Glyph = "", Label = "Remove from Library", Activate = () => { Shell.Pop(); Shell.Confirm("Remove", $"Remove {g.Title} from the library? Files are not deleted.", () => { Shell.Library.RemoveManual(g.Id); _ = Shell.Library.RescanAsync(); }); } });
         items.Add(new() { Glyph = "", Label = "Hide from Home", Activate = () => { Shell.Pop(); AppSettings.Current.For(g.Id).Hidden = true; AppSettings.Current.Save(); Shell.Library.NotifyChanged(); } });
+        // Same order as the console panel: removal first, then the game's own settings, Information last.
+        items.Add(new() { Glyph = "\uEB9F", Label = "Change Artwork", Activate = () => { Shell.Pop(); Shell.Push(new ArtPickerScreen(g)); } });
+        items.Add(new() { Glyph = "", Label = "Game Settings", Activate = () => { Shell.Pop(); Shell.Push(GameSettings(g)); } });
+        items.Add(new() { Glyph = "", Label = "Information", Activate = () => { Shell.Pop(); Shell.Push(InfoScreen(g)); } });
         Shell.Push(new ListScreen(LibraryService.DisplayTitle(g), items, side: true));
     }
 
