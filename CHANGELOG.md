@@ -2,7 +2,9 @@
 
 ## 0.4.7 (unreleased)
 - Wi-Fi: the "Windows Wi-Fi Settings" entry is gone; everything is done in OrbisUI.
-- When ReShade is running in a game, OrbisUI shows an "HDR On" notice over the game.
+- When ReShade is running in a game, OrbisUI shows an "HDR On" notice over the game. The launch picture now stays over the game until ReShade has finished loading, so ReShade's own startup banner is never seen.
+- Settings > Themes: going back from the colour grid lands on Themes again (it jumped to the top of Settings).
+- Display Settings: Brightness removed.
 
 ## 0.4.6 (2026-10-26)
 - Wi-Fi: opening it starts a real scan, so every nearby network shows up (not only the cached one), each with signal bars, its strength and whether it is open or secured. Pick one to connect (the on-screen keyboard asks for the password) or the current one to disconnect.

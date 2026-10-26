@@ -132,7 +132,7 @@ public sealed class MainWindow : Window
     {
         Background_.ApplyTheme();
         Shell.Reset(new HomeScreen());
-        Shell.Push(SettingsScreens.Root());
+        Shell.Push(SettingsScreens.Root(select: 4)); // back on the Themes row
         Shell.Push(Theme.Picker());
     }
 
@@ -304,11 +304,16 @@ public sealed class MainWindow : Window
 
     void OnGameReady(Game g, IntPtr hwnd)
     {
-        if (hwnd != IntPtr.Zero && _splash.Visibility == Visibility.Visible && _splashSrc != null) HoldSplashUntilFocused(hwnd);
+        var rsLog = ReShade.LogFor(g);
+        if (hwnd != IntPtr.Zero && _splash.Visibility == Visibility.Visible && (_splashSrc != null || rsLog != null)) HoldSplashUntilFocused(g, hwnd, rsLog);
         HideSplash();
         if (hwnd != IntPtr.Zero) SendGameToFront();
         else Log.Warn($"No window detected for {g.Title}; leaving the launcher visible");
         _ = LosslessScaling.ActivateAsync(g, hwnd, () => Shell.Launcher.Running?.Id == g.Id);
+    }
+
+    void AnnounceReShade(Game g, IntPtr hwnd)
+    {
         if (hwnd != IntPtr.Zero) Task.Run(() => { if (ReShade.IsLoaded(hwnd)) { Log.Info($"ReShade is loaded in {g.Title}"); Dispatcher.BeginInvoke(() => GameToast.Show("HDR On", "", "\uE706")); } });
     }
 
@@ -451,8 +456,9 @@ public sealed class MainWindow : Window
     }
 
     /// <summary>The shell minimizes when the game comes forward, so the background moves to a topmost, non-activating
-    /// window that fades out once the game window has focus (or after 10 s).</summary>
-    void HoldSplashUntilFocused(IntPtr game)
+    /// window that fades out once the game window has focus (or after 10 s). With ReShade it also stays until ReShade's
+    /// log has been quiet for 6 s: its startup banner shows while effects compile and for 5 s after, and has no off switch.</summary>
+    void HoldSplashUntilFocused(Game g, IntPtr game, string? rsLog)
     {
         // shortcut: covers the primary screen only, fine on the Ally; use the game window's monitor for multi-screen setups.
         var w = new Window
@@ -460,16 +466,26 @@ public sealed class MainWindow : Window
             WindowStyle = WindowStyle.None, AllowsTransparency = true, ResizeMode = ResizeMode.NoResize, ShowInTaskbar = false,
             Topmost = true, ShowActivated = false, Focusable = false, IsHitTestVisible = false, Background = Brushes.Black,
             Left = 0, Top = 0, Width = SystemParameters.PrimaryScreenWidth, Height = SystemParameters.PrimaryScreenHeight,
-            Content = SplashArt(_splashSrc!),
+            Content = _splashSrc != null ? SplashArt(_splashSrc) : new Image { Source = _splashArt.Source, Width = 420 },
         };
         w.Show();
         var started = DateTime.UtcNow;
+        long logSize = -1;
+        var logChanged = started;
         var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         t.Tick += (_, _) =>
         {
-            if (Native.GetForegroundWindow() != game && Native.IsWindow(game) && DateTime.UtcNow - started < TimeSpan.FromSeconds(10)) return;
+            var age = DateTime.UtcNow - started;
+            if (Native.GetForegroundWindow() != game && Native.IsWindow(game) && age < TimeSpan.FromSeconds(10)) return;
+            if (rsLog != null && Native.IsWindow(game) && age < TimeSpan.FromSeconds(30))
+            {
+                var size = ReShade.LogSize(rsLog);
+                if (size != logSize) { logSize = size; logChanged = DateTime.UtcNow; }
+                if (DateTime.UtcNow - logChanged < TimeSpan.FromSeconds(6)) return;
+            }
             t.Stop();
             UiKit.Animate(w, OpacityProperty, 0, 600, w.Close);
+            if (rsLog != null) AnnounceReShade(g, game);
         };
         t.Start();
     }

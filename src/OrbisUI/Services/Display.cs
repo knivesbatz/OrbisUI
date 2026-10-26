@@ -85,38 +85,4 @@ public static class Display
         ChangeDisplaySettingsEx(null, IntPtr.Zero, IntPtr.Zero, 0, IntPtr.Zero);
         Log.Info("Display: reverted");
     }
-
-    // Internal panel brightness goes through WMI; PowerShell avoids pulling System.Management into the app.
-    public static int? GetBrightness()
-    {
-        var o = Ps("(Get-CimInstance -Namespace root/wmi -ClassName WmiMonitorBrightness -ErrorAction Stop | Select-Object -First 1).CurrentBrightness");
-        return int.TryParse(o, out var v) ? v : null;
-    }
-
-    static int _pending = -1;
-
-    /// <summary>Queues a brightness change; rapid presses collapse into one call.</summary>
-    public static void SetBrightness(int percent)
-    {
-        if (Interlocked.Exchange(ref _pending, Math.Clamp(percent, 0, 100)) != -1) return;
-        Task.Run(() =>
-        {
-            Thread.Sleep(150);
-            int v = Interlocked.Exchange(ref _pending, -1);
-            Ps($"Get-CimInstance -Namespace root/wmi -ClassName WmiMonitorBrightnessMethods | Invoke-CimMethod -MethodName WmiSetBrightness -Arguments @{{Timeout=1;Brightness={v}}} | Out-Null");
-        });
-    }
-
-    static string? Ps(string script)
-    {
-        try
-        {
-            using var p = Process.Start(new ProcessStartInfo("powershell.exe", $"-NoProfile -NonInteractive -Command \"{script}\"")
-            { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true })!;
-            var o = p.StandardOutput.ReadToEnd().Trim();
-            p.WaitForExit(5000);
-            return o;
-        }
-        catch (Exception ex) { Log.Warn("brightness: " + ex.Message); return null; }
-    }
 }

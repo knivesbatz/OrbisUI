@@ -11,7 +11,7 @@ public static class SettingsScreens
     static AppSettings S => AppSettings.Current;
     static void Save() => S.Save();
 
-    public static Screen Root() => new ListScreen("Settings", new[]
+    public static Screen Root(int select = 0) => new ListScreen("Settings", new[]
     {
         new ListItem { Glyph = "\uE8F1", Label = "Library", Sub = () => "Scanning, ROM folder, adding games", Activate = () => Shell.Push(Library()) },
         new ListItem { Glyph = "\uE7F4", Label = "TV & Video", Sub = () => "Add or remove apps and change their art", Activate = () => Shell.Push(new FolderScreen(S.Folders[0])) },
@@ -27,7 +27,7 @@ public static class SettingsScreens
         new ListItem { Glyph = "\uE895", Label = "System Software Update", Sub = () => "Version " + Updater.CurrentText, Activate = () => Shell.Push(UpdateScreen()) },
         new ListItem { Glyph = "\uE8B7", Label = "File Manager", Sub = () => "Browse, copy, move and delete files; install PS4 .pkg files", Activate = () => FileManager.Open() },
         new ListItem { Glyph = "\uE770", Label = "System", Activate = () => Shell.Push(SystemScreen()) },
-    });
+    }, select: select);
 
     // ---- Controller Fixer: PC games only (emulated games already show PlayStation buttons) ----
     static Screen FixerGames()
@@ -164,7 +164,7 @@ public static class SettingsScreens
             Adjust = d => { S.MusicVolume = Math.Clamp(Math.Round(S.MusicVolume + d * 0.1, 1), 0, 1); Save(); Shell.Window.SyncMusic(); Sound.Play(Sfx.Cursor); } },
         new ListItem { Glyph = "\uE768", Label = "Startup Animation", Check = () => S.BootAnimation, Activate = () => { S.BootAnimation = !S.BootAnimation; Save(); } },
         new ListItem { Glyph = "\uE790", Label = "Animated Background", Check = () => S.AnimatedBackground, Activate = () => { S.AnimatedBackground = !S.AnimatedBackground; Save(); Shell.Window.Background_.SetRunning(false); Shell.Window.Background_.SetRunning(true); } },
-        new ListItem { Glyph = "\uE7F4", Label = "Display Settings", Sub = () => "Resolution, refresh rate and brightness", Activate = () => Shell.Push(DisplayScreen()) },
+        new ListItem { Glyph = "\uE7F4", Label = "Display Settings", Sub = () => "Resolution and refresh rate", Activate = () => Shell.Push(DisplayScreen()) },
     });
 
     static Screen AccessibilityScreen() => new ListScreen("Accessibility", new[]
@@ -238,12 +238,9 @@ public static class SettingsScreens
         }), subtitle: "Choose where sound plays");
     }
 
-    static int? _brightness;
-
     static Screen DisplayScreen()
     {
-        ListScreen? scr = null;
-        scr = new ListScreen("Display Settings", new[]
+        return new ListScreen("Display Settings", new[]
         {
             new ListItem { Glyph = "\uE7F4", Label = "Resolution", Value = () => Display.Current().ToString(), Activate = () =>
             {
@@ -266,11 +263,7 @@ public static class SettingsScreens
                     Activate = () => { Shell.Pop(); TryDisplay(cur with { Hz = hz }); },
                 }), dialog: true, select: Math.Max(0, rates.IndexOf(cur.Hz))));
             } },
-            new ListItem { Glyph = "\uE706", Label = "Brightness", Value = () => _brightness is int b ? $"{b}%" : "…",
-                Adjust = d => { if (_brightness is not int b) return; _brightness = Math.Clamp(b + d * 10, 0, 100); Display.SetBrightness(_brightness.Value); Sound.Play(Sfx.Cursor); } },
         });
-        Task.Run(Display.GetBrightness).ContinueWith(t => { _brightness = t.Result; scr.Dispatcher.Invoke(() => scr.Refresh()); });
-        return scr;
     }
 
     /// <summary>Applies a display mode for 15 seconds; it stays only if the user confirms, like the console and Windows do.</summary>

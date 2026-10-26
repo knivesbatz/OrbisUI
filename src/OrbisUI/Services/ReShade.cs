@@ -221,6 +221,16 @@ public static class ReShade
         return done;
     }
 
+    /// <summary>ReShade.log next to the game's ReShade.ini, or null when ReShade isn't set up for it.</summary>
+    public static string? LogFor(Game g) => Check(g) is (State.Ready, string ini) ? Path.Combine(Path.GetDirectoryName(ini)!, "ReShade.log") : null;
+
+    /// <summary>Current size of a log ReShade still has open (the directory entry's size lags behind while it writes).</summary>
+    public static long LogSize(string log)
+    {
+        try { using var f = new FileStream(log, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete); return f.Length; }
+        catch { return -1; }
+    }
+
     /// <summary>True when ReShade is loaded in the process that owns the window, under any DLL name (dxgi, d3d11, the Vulkan layer).</summary>
     public static bool IsLoaded(IntPtr hwnd)
     {
