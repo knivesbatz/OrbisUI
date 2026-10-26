@@ -59,7 +59,7 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 ## Next update (TODO)
 Only open work is listed here; everything shipped is under Features.
 1. Bloodborne: install the base game and the 1.09 update (configs and patches are ready)
-2. Lossless Scaling: check detection with a real game on the Ally (#20)
+2. Trophies: press Down on the home Trophies card to open the game's full trophy list (icon, name, description, grade, earned or locked, date)
 3. Bluetooth: pairing still opens Windows Settings instead of a native pairing screen (#19)
 4. PSP test ROM is a .7z, which PPSSPP can't open; it runs once extracted to .iso
 5. Internet Browser: check it with the Ally's physical buttons
