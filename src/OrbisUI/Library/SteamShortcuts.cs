@@ -117,7 +117,21 @@ public static class SteamShortcuts
         // An unreadable file throws here, before anything is written.
         var root = old == null ? new Vdf.Node() : Vdf.ParseBinary(old);
         int before = root.Child("shortcuts")?.Count ?? 0;
-        var (added, repaired) = Merge(root, Entries(games));
+        var entries = Entries(games);
+        var (added, repaired) = Merge(root, entries);
+        // Steam library art for every shortcut of ours (only missing pictures are fetched), and its icon on the shortcut.
+        var grid = Path.Combine(cfg, "grid");
+        var nodes = root.Child("shortcuts")!.Values.OfType<Vdf.Node>().Where(n => n.TryGetValue("appid", out var a) && a is uint).ToDictionary(n => (uint)n["appid"]);
+        foreach (var e in entries)
+        {
+            if (!nodes.TryGetValue(AppId(e.Game), out var n)) continue;
+            try
+            {
+                var icon = await MetadataService.SteamLibraryArtAsync(e.Game, e.Name, grid, AppId(e.Game), CancellationToken.None);
+                if (icon != null && n.Str("icon") != icon) { n["icon"] = icon; if (!added.Contains(e.Game)) repaired++; }
+            }
+            catch (Exception ex) { Log.Warn($"Steam art {e.Game.Title}: {ex.Message}"); }
+        }
         if (added.Count + repaired > 0)
         {
             var bytes = Vdf.WriteBinary(root);
@@ -131,11 +145,33 @@ public static class SteamShortcuts
             AtomicFile.WriteAllBytes(file, bytes);
             Log.Info($"Steam shortcuts: {added.Count} added, {repaired} repaired");
         }
-        var grid = Path.Combine(cfg, "grid");
-        foreach (var g in added)
-            try { await MetadataService.SteamLibraryArtAsync(g, LibraryService.DisplayTitle(g), grid, AppId(g), CancellationToken.None); }
-            catch (Exception ex) { Log.Warn($"Steam art {g.Title}: {ex.Message}"); }
         return added.Count + repaired == 0 ? "Steam already has all your games." : $"Added {added.Count} games to Steam" + (repaired > 0 ? $", updated {repaired}." : ".");
+    }
+
+    /// <summary>
+    /// The steam://rungameid id of a Steam shortcut that runs exactly what OrbisUI would run (ours, or one the user made
+    /// with another tool), so launching through it gives the game the Steam overlay without changing anything else.
+    /// </summary>
+    public static string? RunId(Game g)
+    {
+        try
+        {
+            var steam = Steam.FindInstall();
+            var ud = steam == null ? null : Steam.UserDataDir(steam, AppSettings.Current.SteamId64);
+            var file = ud == null ? null : Path.Combine(ud, "config", "shortcuts.vdf");
+            if (file == null || !File.Exists(file)) return null;
+            var e = Entries(new[] { g }).FirstOrDefault();
+            if (e == null) return null;
+            var all = Vdf.ParseBinary(File.ReadAllBytes(file)).Child("shortcuts")?.Values.OfType<Vdf.Node>().ToList() ?? new();
+            var ours = all.FirstOrDefault(x => x.TryGetValue("appid", out var a) && a is uint u && u == AppId(g));
+            var n = ours != null && Key(ours.Str("Exe"), ours.Str("LaunchOptions")) == Key(e.Exe, e.Args) ? ours
+                : all.FirstOrDefault(x => Key(x.Str("Exe") ?? x.Str("exe"), x.Str("LaunchOptions")) == Key(e.Exe, e.Args));
+            if (n == null) return null;
+            // Shortcuts from older tools may lack the stored id; Steam derives it from exe + name then.
+            uint id = n.TryGetValue("appid", out var v) && v is uint su ? su : Crc32((n.Str("Exe") ?? n.Str("exe") ?? "") + (n.Str("AppName") ?? n.Str("appname") ?? "")) | 0x80000000u;
+            return (((ulong)id << 32) | 0x02000000UL).ToString();
+        }
+        catch (Exception ex) { Log.Warn("Steam shortcut check: " + ex.Message); return null; }
     }
 
     /// <summary>Startup path: only touches Steam's files when Steam isn't running.</summary>

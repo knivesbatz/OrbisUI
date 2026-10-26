@@ -71,6 +71,22 @@ public sealed class LaunchService
         if (g.Kind == LaunchKind.Emulator && rom != null && !File.Exists(rom) && !Directory.Exists(rom) && g.Platform != "VITA")
             throw new LaunchException("The game file is missing. It may have been moved or deleted.");
         ReShade.ApplyFor(g);
+        // Through the game's Steam shortcut the Steam overlay hooks in. A first launch adds the shortcut (Steam restarts once);
+        // another disc than the one in the shortcut, or a failed sync, starts it directly.
+        if (AppSettings.Current.AddGamesToSteam && (disc == null || disc == g.Path) && Steam.FindInstall() != null)
+        {
+            if (SteamShortcuts.RunId(g) == null)
+            {
+                Status?.Invoke(g, "Adding to Steam…");
+                Log.Info("Steam shortcut: " + await SteamShortcuts.SyncNowAsync(OrbisUI.UI.Shell.Library.Games.ToList()));
+            }
+            if (SteamShortcuts.RunId(g) is string runId)
+            {
+                Log.Info($"Launch via Steam shortcut: \"{exe}\" {args}");
+                await RunViaSteam(g, ct, runId, Path.GetDirectoryName(exe)!);
+                return;
+            }
+        }
         Log.Info($"Launch: \"{exe}\" {args}");
         Status?.Invoke(g, "Starting…");
         var p = Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = false, WorkingDirectory = wd ?? "" })
@@ -169,14 +185,16 @@ public sealed class LaunchService
     static string? SteamRunningAppId()
         => Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "RunningAppID", 0)?.ToString();
 
-    async Task RunViaSteam(Game g, CancellationToken ct)
+    /// <param name="runId">steam://rungameid id; defaults to the game's Steam app id.</param>
+    /// <param name="shortcutDir">For OrbisUI's own shortcuts: the folder of the program Steam starts, used to find its process.</param>
+    async Task RunViaSteam(Game g, CancellationToken ct, string? runId = null, string? shortcutDir = null)
     {
         if (Steam.FindInstall() == null) throw new LaunchException("Steam isn't installed.");
         Status?.Invoke(g, Steam.IsRunning() ? "Starting through Steam…" : "Starting Steam…");
-        Steam.OpenUrl(Steam.Links.Run(g.SteamAppId!));
+        Steam.OpenUrl(Steam.Links.Run(runId ?? g.SteamAppId!));
         var deadline = DateTime.UtcNow.AddSeconds(AppSettings.Current.LaunchTimeoutSec + 60);
-        string dir = g.InstallDir ?? (g.Path != null ? Path.GetDirectoryName(g.Path) ?? "" : "");
-        bool isShortcut = g.Kind == LaunchKind.SteamShortcut;
+        string dir = shortcutDir ?? g.InstallDir ?? (g.Path != null ? Path.GetDirectoryName(g.Path) ?? "" : "");
+        bool isShortcut = shortcutDir != null || g.Kind == LaunchKind.SteamShortcut;
 
         // Ready = Steam reports the app running (or, for shortcuts, its process exists) and a game window is up.
         bool running = false;

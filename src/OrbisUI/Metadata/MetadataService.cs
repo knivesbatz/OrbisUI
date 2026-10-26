@@ -346,10 +346,15 @@ public sealed partial class MetadataService
     /// Steam library art for a non-Steam shortcut, from SteamGridDB (the user's default source): portrait capsule, wide capsule,
     /// hero and logo, saved under userdata\...\config\grid with Steam's file names. Existing files are kept.
     /// </summary>
-    public static async Task SteamLibraryArtAsync(Game g, string title, string gridDir, uint appId, CancellationToken ct)
+    /// <summary>Grid, wide grid, hero, logo and icon for a non-Steam shortcut, saved the way Steam looks for them.
+    /// Returns the icon file (Steam takes it from the shortcut's "icon" field), or null.</summary>
+    public static async Task<string?> SteamLibraryArtAsync(Game g, string title, string gridDir, uint appId, CancellationToken ct)
     {
+        string? Icon() => Directory.Exists(gridDir) ? Directory.EnumerateFiles(gridDir, $"{appId}_icon.*").FirstOrDefault() : null;
+        var suffixes = new[] { "p", "", "_hero", "_logo", "_icon" };
+        if (Directory.Exists(gridDir) && suffixes.All(sfx => Directory.EnumerateFiles(gridDir, $"{appId}{sfx}.*").Any(f => sfx != "" || Path.GetFileNameWithoutExtension(f) == appId.ToString()))) return Icon();
         var key = Secrets.Get(Secrets.SteamGridDb);
-        if (key == null) return;
+        if (key == null) return Icon();
         HttpRequestMessage Req(string path)
         {
             var r = new HttpRequestMessage(HttpMethod.Get, "https://www.steamgriddb.com/api/v2/" + path);
@@ -360,7 +365,7 @@ public sealed partial class MetadataService
         string? id;
         using (var d = await GetJson(Req("search/autocomplete/" + Uri.EscapeDataString(term)), ct))
         {
-            if (d == null || !d.RootElement.TryGetProperty("data", out var arr) || arr.GetArrayLength() == 0) return;
+            if (d == null || !d.RootElement.TryGetProperty("data", out var arr) || arr.GetArrayLength() == 0) return Icon();
             var best = arr.EnumerateArray().FirstOrDefault(e => TitlesMatch(e.GetProperty("name").GetString() ?? "", term));
             id = (best.ValueKind == JsonValueKind.Undefined ? arr[0] : best).GetProperty("id").GetRawText();
         }
@@ -371,15 +376,17 @@ public sealed partial class MetadataService
             ($"grids/game/{id}?dimensions=920x430,460x215&types=static&nsfw=false&humor=false", ""),
             ($"heroes/game/{id}?types=static&nsfw=false&humor=false", "_hero"),
             ($"logos/game/{id}?types=static&nsfw=false&humor=false", "_logo"),
+            ($"icons/game/{id}?types=static&nsfw=false&humor=false", "_icon"),
         })
         {
-            if (Directory.EnumerateFiles(gridDir, $"{appId}{suffix}.*").Any()) continue;
+            if (Directory.EnumerateFiles(gridDir, $"{appId}{suffix}.*").Any(f => suffix != "" || Path.GetFileNameWithoutExtension(f) == appId.ToString())) continue;
             using var d = await GetJson(Req(query), ct);
             if (FirstUrl(d) is not string url || await GetBytes(url, ct) is not byte[] img) continue;
-            var ext = Path.GetExtension(new Uri(url).AbsolutePath).ToLowerInvariant() is ".jpg" or ".jpeg" ? ".jpg" : ".png";
+            var ext = Path.GetExtension(new Uri(url).AbsolutePath).ToLowerInvariant() switch { ".jpg" or ".jpeg" => ".jpg", ".ico" => ".ico", _ => ".png" };
             AtomicFile.WriteAllBytes(Path.Combine(gridDir, $"{appId}{suffix}{ext}"), img);
         }
         Log.Info($"Steam library art for {title} from SteamGridDB");
+        return Icon();
     }
 
     /// <summary>Stand-in game so app art can use the SteamGridDB search.</summary>
