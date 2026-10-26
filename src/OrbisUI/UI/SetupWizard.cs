@@ -103,7 +103,6 @@ public sealed class SetupWizard : Screen
             Sub = () => _soundDir ?? "A folder with snd_*.wav files. Without one, built-in tones are used.",
             Check = _soundDir != null ? () => _importSounds : null,
             Activate = () => { if (_soundDir != null) _importSounds = !_importSounds; else FilePicker.Pick("Sound Pack Folder", null, d => { _soundDir = d; Refresh(); }); } },
-        new ListItem { Glyph = "", Label = "UI Sounds", Check = () => S.UiSounds, Activate = () => S.UiSounds = !S.UiSounds },
         Continue(),
     }, select: 2);
 

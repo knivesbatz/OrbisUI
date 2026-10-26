@@ -13,19 +13,19 @@ public static class SettingsScreens
 
     public static Screen Root(int select = 0) => new ListScreen("Settings", new[]
     {
-        new ListItem { Glyph = "\uE8F1", Label = "Library", Sub = () => "Scanning, ROM folder, adding games", Activate = () => Shell.Push(Library()) },
-        new ListItem { Glyph = "\uE7F4", Label = "TV & Video", Sub = () => "Add or remove apps and change their art", Activate = () => Shell.Push(new FolderScreen(S.Folders[0])) },
-        new ListItem { Glyph = "\uE7FC", Label = "Emulators", Sub = () => "PS1, PS2, PS3, PS4, PSP and PS Vita", Activate = () => Shell.Push(EmulatorsScreen()) },
+        new ListItem { Glyph = "\uE8F1", Label = "Library", Activate = () => Shell.Push(Library()) },
+        new ListItem { Glyph = "\uE7F4", Label = "TV & Video", Activate = () => Shell.Push(new FolderScreen(S.Folders[0])) },
+        new ListItem { Glyph = "\uE7FC", Label = "Emulators", Activate = () => Shell.Push(EmulatorsScreen()) },
         new ListItem { Glyph = "\uE7F6", Label = "Sound and Screen", Activate = () => Shell.Push(SoundScreen()) },
-        new ListItem { Glyph = "\uE790", Label = "Themes", Sub = () => Theme.Current.Name, Activate = () => Shell.Push(Theme.Picker()) },
-        new ListItem { Glyph = "\uE701", Label = "Network and Devices", Sub = () => "Wi-Fi, Bluetooth, audio devices", Activate = () => Shell.Push(DevicesScreen()) },
+        new ListItem { Glyph = "\uE790", Label = "Themes", Activate = () => Shell.Push(Theme.Picker()) },
+        new ListItem { Glyph = "\uE701", Label = "Network and Devices", Activate = () => Shell.Push(DevicesScreen()) },
         new ListItem { Glyph = "\uE776", Label = "Accessibility", Activate = () => Shell.Push(AccessibilityScreen()) },
-        new ListItem { Glyph = "\uE8D7", Label = "Accounts and Services", Sub = () => "Steam, SteamGridDB, IGDB", Activate = () => Shell.Push(AccountsScreen()) },
+        new ListItem { Glyph = "\uE8D7", Label = "Accounts and Services", Activate = () => Shell.Push(AccountsScreen()) },
         new ListItem { Glyph = "\uE7B3", Label = "Lossless Scaling", Activate = () => Shell.Push(LosslessScreen()) },
-        new ListItem { Glyph = "\uE7FC", Label = "Controllers", Sub = () => Shell.Pad?.PadName ?? "No controller connected", Activate = () => Shell.Push(new ControllerTestScreen()) },
-        new ListItem { Glyph = "\uE7FC", Label = "Controller Fixer", Sub = () => "Find and install PlayStation button prompt mods", Activate = () => Shell.Push(FixerGames()) },
-        new ListItem { Glyph = "\uE895", Label = "System Software Update", Sub = () => "Version " + Updater.CurrentText, Activate = () => Shell.Push(UpdateScreen()) },
-        new ListItem { Glyph = "\uE8B7", Label = "File Manager", Sub = () => "Browse, copy, move and delete files; install PS4 .pkg files", Activate = () => FileManager.Open() },
+        new ListItem { Glyph = "\uE7FC", Label = "Controllers", Activate = () => Shell.Push(new ControllerTestScreen()) },
+        new ListItem { Glyph = "\uE7FC", Label = "Controller Fixer", Activate = () => Shell.Push(FixerGames()) },
+        new ListItem { Glyph = "\uE895", Label = "System Software Update", Activate = () => Shell.Push(UpdateScreen()) },
+        new ListItem { Glyph = "\uE8B7", Label = "File Manager", Activate = () => FileManager.Open() },
         new ListItem { Glyph = "\uE770", Label = "System", Activate = () => Shell.Push(SystemScreen()) },
     }, select: select);
 
@@ -153,7 +153,6 @@ public static class SettingsScreens
 
     static Screen SoundScreen() => new ListScreen("Sound and Screen", new[]
     {
-        new ListItem { Glyph = "\uE767", Label = "UI Sounds", Check = () => S.UiSounds, Activate = () => { S.UiSounds = !S.UiSounds; Sound.SetVolume(S.UiVolume, S.UiSounds); Save(); } },
         new ListItem { Glyph = "\uE995", Label = "UI Sound Volume", Value = () => $"{S.UiVolume * 100:0}%",
             Adjust = d => { S.UiVolume = Math.Clamp(Math.Round(S.UiVolume + d * 0.1, 1), 0, 1); Sound.SetVolume(S.UiVolume, S.UiSounds); Save(); Sound.Play(Sfx.Cursor); } },
         new ListItem { Glyph = "\uE8D6", Label = "Import Sound Pack", Sub = () => Sound.HasPack ? "Sound pack installed" : "Using built-in tones. Choose a folder of snd_*.wav files",

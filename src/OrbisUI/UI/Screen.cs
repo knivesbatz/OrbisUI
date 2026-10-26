@@ -33,14 +33,15 @@ public abstract class Screen : Grid
     protected Grid Chrome(string title, params (Btn, string)[] hints)
     {
         var root = new Grid();
-        var t = UiKit.Label(title, 46);
-        t.Margin = new Thickness(70, 34, 0, 0);
+        // Measured from the PS4 Settings screen: title at x 105, rules at y 136 and 135 px above the bottom.
+        var t = UiKit.Label(title, 54);
+        t.Margin = new Thickness(105, 52, 0, 0);
         t.VerticalAlignment = VerticalAlignment.Top;
         root.Children.Add(t);
-        root.Children.Add(new Border { Height = 1, Background = UiKit.Line, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 112, 0, 0) });
-        root.Children.Add(new Border { Height = 1, Background = UiKit.Line, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 88) });
+        root.Children.Add(new Border { Height = 1, Background = UiKit.Line, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 136, 0, 0) });
+        root.Children.Add(new Border { Height = 1, Background = UiKit.Line, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 135) });
         var h = UiKit.Hints(hints.Length > 0 ? hints : new[] { (Btn.Cross, "Enter"), (Btn.Circle, "Back") });
-        h.Margin = new Thickness(70, 0, 0, 30);
+        h.Margin = new Thickness(105, 0, 0, 82);
         h.VerticalAlignment = VerticalAlignment.Bottom;
         root.Children.Add(h);
         Children.Add(root);

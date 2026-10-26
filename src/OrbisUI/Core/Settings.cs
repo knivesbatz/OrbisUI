@@ -72,7 +72,8 @@ public sealed class AppSettings
     /// <summary>Colour theme name from <see cref="UI.Theme.All"/>.</summary>
     public string Theme { get; set; } = "Royal Blue";
     public bool AnimatedBackground { get; set; } = true;
-    public bool UiSounds { get; set; } = true;
+    // UI sounds are always on (user rule); a saved "false" from older versions is ignored.
+    public bool UiSounds { get => true; set { } }
     public double UiVolume { get; set; } = 0.7;
     public bool HomeMusic { get; set; } = true;
     public double MusicVolume { get; set; } = 0.4;

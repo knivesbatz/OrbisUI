@@ -27,6 +27,7 @@ public class ListScreen : Screen
     readonly StackPanel _rows = new();
     readonly TranslateTransform _scroll = new();
     readonly Border _focus = UiKit.FocusFrame();
+    readonly Border _thumb = new() { Width = 3, Background = UiKit.B("#CCFFFFFF"), VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Left, RenderTransform = new TranslateTransform() };
     readonly bool _dialog, _side;
     readonly double _rowH;
     readonly double _viewH;
@@ -45,8 +46,8 @@ public class ListScreen : Screen
         _side = side;
         dialog = _dialog;
         _rowH = side ? 74 : dialog ? 78 : 84;
-        double listW = side ? 444 : dialog ? 820 : 1340, left = dialog ? (UiKit.W - 820) / 2 : 290, top = dialog ? 0 : 150;
-        _viewH = side ? Math.Min(_items.Count, 11) * _rowH : dialog ? Math.Min(_items.Count, 8) * _rowH : 820;
+        double listW = side ? 444 : dialog ? 820 : 1350, left = dialog ? (UiKit.W - 820) / 2 : 285, top = dialog ? 0 : 168;
+        _viewH = side ? Math.Min(_items.Count, 11) * _rowH : dialog ? Math.Min(_items.Count, 8) * _rowH : 756;
 
         FrameworkElement host;
         var viewport = new Canvas { Width = listW, Height = _viewH, ClipToBounds = true };
@@ -95,6 +96,14 @@ public class ListScreen : Screen
         else
         {
             Chrome(title, hints ?? new[] { (Btn.Cross, "Enter"), (Btn.Circle, "Back") });
+            // PS4 settings lists: thin white focus box with no glow, and a scrollbar to the right of the rows.
+            _focus.BorderBrush = UiKit.B("#E6FFFFFF"); _focus.BorderThickness = new Thickness(2); _focus.Effect = null; _focus.Height = _rowH;
+            if (_items.Count * _rowH > _viewH)
+            {
+                _thumb.Height = Math.Max(40, _viewH * _viewH / (_items.Count * _rowH));
+                _thumb.Margin = new Thickness(left + listW + 18, top, 0, 0);
+                Children.Add(_thumb);
+            }
             viewport.HorizontalAlignment = HorizontalAlignment.Left;
             viewport.VerticalAlignment = VerticalAlignment.Top;
             viewport.Margin = new Thickness(left, top, 0, 0);
@@ -137,14 +146,15 @@ public class ListScreen : Screen
             g.Children.Add(t);
             return g;
         }
-        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(64) });
+        bool page = !_dialog;
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(page ? 98 : 64) });
         g.ColumnDefinitions.Add(new ColumnDefinition());
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var icon = UiKit.Glyph(it.Glyph, 26);
+        var icon = UiKit.Glyph(it.Glyph, page ? 36 : 26);
         icon.HorizontalAlignment = HorizontalAlignment.Center;
         g.Children.Add(icon);
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(UiKit.Label(it.Label, 30));
+        text.Children.Add(UiKit.Label(it.Label, page ? 32 : 30));
         if (it.Sub?.Invoke() is string sub && sub.Length > 0) text.Children.Add(UiKit.Label(sub, 20, UiKit.Dim));
         Grid.SetColumn(text, 1);
         g.Children.Add(text);
@@ -170,7 +180,7 @@ public class ListScreen : Screen
             right = sp;
         }
         if (right != null) { right.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(right, 2); g.Children.Add(right); }
-        g.Children.Add(new Border { Height = 1, Background = UiKit.B("#22FFFFFF"), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(64, 0, 0, 0), IsHitTestVisible = false });
+        g.Children.Add(new Border { Height = 1, Background = UiKit.B(page ? "#40FFFFFF" : "#22FFFFFF"), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(page ? 0 : 64, 0, 0, 0), IsHitTestVisible = false });
         Grid.SetColumnSpan(g.Children[^1], 3);
         return g;
     }
@@ -197,15 +207,18 @@ public class ListScreen : Screen
         if (y + _rowH * 2 > off + _viewH) off = Math.Min(maxOff, y + _rowH * 2 - _viewH);
         off = Math.Min(off, maxOff);
         var ft = (TranslateTransform)_focus.RenderTransform;
+        double fy = _dialog || _side ? 3 : 0;
+        double maxScroll = _items.Count * _rowH - _viewH;
+        if (maxScroll > 0) UiKit.Animate((TranslateTransform)_thumb.RenderTransform, TranslateTransform.YProperty, off / maxScroll * (_viewH - _thumb.Height), animate ? 140 : 1);
         if (animate)
         {
             UiKit.Animate(_scroll, TranslateTransform.YProperty, -off, 140);
-            UiKit.Animate(ft, TranslateTransform.YProperty, y - off + 3, 120);
+            UiKit.Animate(ft, TranslateTransform.YProperty, y - off + fy, 120);
         }
         else
         {
             _scroll.BeginAnimation(TranslateTransform.YProperty, null); _scroll.Y = -off;
-            ft.BeginAnimation(TranslateTransform.YProperty, null); ft.Y = y - off + 3;
+            ft.BeginAnimation(TranslateTransform.YProperty, null); ft.Y = y - off + fy;
         }
     }
 
