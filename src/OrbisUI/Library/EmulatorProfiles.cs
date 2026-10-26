@@ -87,6 +87,8 @@ public static class EmulatorProfiles
     {
         ("backend-renderer", "Vulkan"), ("boot-apps-full-screen", "true"), ("show-live-area-screen", "false"),
         ("show-welcome", "false"), ("performance-overlay", "false"),
+        // 0 = no update check/prompt; log level 2 = info (0 = trace slows games); Vulkan validation is debug-only.
+        ("check-for-updates-mode", "0"), ("log-level", "2"), ("validation-layer", "false"),
     };
 
     /// <summary>Vita3K's welcome dialog blocks a direct game boot, so its own config gets the Ally keys too (after a backup).</summary>
