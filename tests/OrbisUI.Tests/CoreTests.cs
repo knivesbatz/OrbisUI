@@ -274,4 +274,15 @@ public class CoreTests
     [InlineData("http://a.org/x", "http://a.org/x")]
     [InlineData("ps4 games", "https://www.google.com/search?q=ps4%20games")]
     public void BrowserAddressOrGoogleSearch(string typed, string url) => Assert.Equal(url, OrbisUI.UI.BrowserScreen.ToUrl(typed));
+
+    [Fact]
+    public void GameProgress_GradesAndTitleMatching()
+    {
+        Assert.Equal(1, GameProgress.GradeFromRarity(4.2));
+        Assert.Equal(2, GameProgress.GradeFromRarity(20));
+        Assert.Equal(3, GameProgress.GradeFromRarity(80));
+        Assert.Equal(1, GameProgress.GradeFromPoints(25));
+        Assert.Equal(3, GameProgress.GradeFromPoints(5));
+        Assert.Equal(GameProgress.Normalize("Shadow Hearts"), GameProgress.Normalize("shadow-hearts!"));
+    }
 }

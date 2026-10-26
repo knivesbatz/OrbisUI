@@ -76,7 +76,7 @@ public sealed class WhatsNewScreen : Screen
         return g;
     }
 
-    static ImageSource? Web(string? url, int decode)
+    internal static ImageSource? Web(string? url, int decode)
     {
         if (url == null) return null;
         try

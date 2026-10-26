@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.5 (2026-10-26)
+- Trophies and Friends cards under the selected game, like the console: trophy progress, platinum/gold/silver/bronze counts and the most recent trophy, plus up to three friends with their progress (playing now first). Steam games use Steam achievements and friends (Steam Web API key); emulated games use RetroAchievements and the users you follow there. Grades come from rarity on Steam and points on RetroAchievements; finishing everything counts as the platinum.
+
 ## 0.4.4 (2026-10-26)
 - Steam friends, chat, profile and store pages open in Steam Big Picture. When Big Picture closes, Steam goes back to minimized and OrbisUI comes back to the front.
 - Steam games launch with Steam kept minimized instead of popping up the Steam window; Steam also starts in the background with OrbisUI.

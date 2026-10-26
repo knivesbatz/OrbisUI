@@ -11,4 +11,3 @@ Open work only; everything implemented is listed in the README's Features sectio
 7. Finish the emulator test pass: Persona 3 FES (PS2) boots (log) but no picture was captured; Gravity Rush (Vita) boot not confirmed
 8. SONYRESOURCES backup: the folder exists at C:\Sony\SONYRESOURCES; OrbisUI still needs to import it and install the PS3/Vita firmware on its own (draft code parked in SONYRESOURCES\Extras\orbisui-wip)
 9. Texture packs: no trusted source to download them from (#27)
-10. Home screen: trophy and friend progress cards under the selected game (Steam achievements and friends, RetroAchievements)

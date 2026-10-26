@@ -18,12 +18,13 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 | ![Home with game art and background](docs/screenshots/home-bg.png) | ![Function row](docs/screenshots/fn.png) |
 | ![Library](docs/screenshots/library.png) | ![Game options](docs/screenshots/options.png) |
 
-**Latest release:** [v0.4.4](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.4.5](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
 ## Features (implemented)
 
 **Console experience**
 - PS4 home: status bar (PS Plus, notifications, messages, friends, your Steam avatar and name, trophies, settings, power, clock), square tiles with the enlarged selection and Start bar; Up drops the row to the bottom and opens the function row like the console
+- Trophies and Friends cards under the selected game: progress, grade counts, most recent trophy and friends' progress (Steam achievements or RetroAchievements)
 - PlayStation Store and What's New tiles; What's New is an activity feed of you and your Steam friends (friends need a Steam Web API key)
 - Live video background, boot video that fades into home (PS skips it) and home music, from your own media in `Data\Media`
 - PS4 sound pack and icon pack (your files; repaired WAV headers), royal-blue theme, everything square-cornered
@@ -66,7 +67,6 @@ Only open work is listed here; everything shipped is under Features.
 7. Finish the emulator test pass: Persona 3 FES (PS2) boots but no picture was captured, Gravity Rush (Vita) boot not confirmed
 8. SONYRESOURCES backup folder: drop it into a new OrbisUI folder to restore emulators, firmware and media (folder built, auto-import unfinished)
 9. Texture packs: no trusted source to download them from (#27)
-10. Trophy and friend progress cards under the selected game on the home screen
 
 ## Install (portable)
 

@@ -12,7 +12,7 @@ public static class RetroAchievements
 
     public static bool Configured => Secrets.Has(Secrets.RetroAchievementsKey) && Secrets.Has(Secrets.RetroAchievementsUser);
 
-    static async Task<JsonDocument?> Get(string api, string query)
+    internal static async Task<JsonDocument?> Get(string api, string query)
     {
         var url = $"https://retroachievements.org/API/{api}.php?y={Uri.EscapeDataString(Secrets.Get(Secrets.RetroAchievementsKey)!)}&{query}";
         try

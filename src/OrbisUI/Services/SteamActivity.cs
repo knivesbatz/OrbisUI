@@ -100,7 +100,7 @@ public static class SteamActivity
         return sorted;
     }
 
-    public sealed record Friend(string SteamId, string Name, int State, string? Game);
+    public sealed record Friend(string SteamId, string Name, int State, string? Game, string? GameId = null, string? Avatar = null);
 
     /// <summary>Your Steam friends with their online state and current game; in-game first, then online, then offline.</summary>
     public static async Task<List<Friend>> FriendsAsync()
@@ -119,14 +119,15 @@ public static class SteamActivity
             if (d == null) continue;
             foreach (var p in d.RootElement.GetProperty("response").GetProperty("players").EnumerateArray())
                 list.Add(new Friend(p.GetProperty("steamid").GetString()!, p.GetProperty("personaname").GetString() ?? "",
-                    p.TryGetProperty("personastate", out var s) ? s.GetInt32() : 0, p.TryGetProperty("gameextrainfo", out var g) ? g.GetString() : null));
+                    p.TryGetProperty("personastate", out var s) ? s.GetInt32() : 0, p.TryGetProperty("gameextrainfo", out var g) ? g.GetString() : null,
+                    p.TryGetProperty("gameid", out var gid) ? gid.GetString() : null, p.TryGetProperty("avatarmedium", out var av) ? av.GetString() : null));
         }
         return list.OrderBy(f => f.Game != null ? 0 : f.State > 0 ? 1 : 2).ThenBy(f => f.Name, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     public static string StateText(Friend f) => f.Game != null ? "Playing " + f.Game : f.State switch { 0 => "Offline", 2 => "Busy", 3 => "Away", 4 => "Snooze", _ => "Online" };
 
-    static async Task<JsonDocument?> Get(string path)
+    internal static async Task<JsonDocument?> Get(string path)
     {
         try
         {

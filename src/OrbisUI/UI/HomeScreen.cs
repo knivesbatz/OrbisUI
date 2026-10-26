@@ -93,15 +93,15 @@ public sealed class HomeScreen : Screen
 
         _fns = new()
         {
-            new("PlayStation Store", "", () => SteamHandoff(Steam.Links.Store, "Store")),
-            new("Notifications", "", () => Shell.Push(new NotificationsScreen())),
-            new("Messages", "", () => FriendsScreen.Open(true)),
-            new("Friends", "", () => FriendsScreen.Open(false)),
-            new("Profile", "", () => SteamHandoff(Steam.Links.Profile, "Profile")),
+            new("PlayStation Store", "îœ™", () => SteamHandoff(Steam.Links.Store, "Store")),
+            new("Notifications", "îª", () => Shell.Push(new NotificationsScreen())),
+            new("Messages", "î¢½", () => FriendsScreen.Open(true)),
+            new("Friends", "îœ–", () => FriendsScreen.Open(false)),
+            new("Profile", "î»", () => SteamHandoff(Steam.Links.Profile, "Profile")),
             new("Trophies", "", TrophiesScreen.Open,
                 Geometry.Parse("M14,4 H42 V14 C42,26 34,32 28,33 C22,32 14,26 14,14 Z M14,8 H6 C6,18 10,22 15,22 M42,8 H50 C50,18 46,22 41,22 M28,33 V42 M18,50 H38 L36,42 H20 Z")),
-            new("Settings", "", () => Shell.Push(SettingsScreens.Root())),
-            new("Power", "", PowerMenu.Show),
+            new("Settings", "îœ“", () => Shell.Push(SettingsScreens.Root())),
+            new("Power", "îŸ¨", PowerMenu.Show),
         };
         BuildFunctionArea();
 
@@ -240,8 +240,8 @@ public sealed class HomeScreen : Screen
         list.AddRange(Shell.Library.Visible.Select(g => new HomeItem { Kind = HomeKind.Game, Game = g, Title = LibraryService.DisplayTitle(g) }));
         list.Add(new HomeItem { Kind = HomeKind.Browser, Title = "Internet Browser", Glyph = "\uE774", IconKey = "browsertile" });
         foreach (var f in AppSettings.Current.Folders)
-            list.Add(new HomeItem { Kind = HomeKind.Folder, Folder = f, Title = f.Name, Glyph = "", IconKey = "tv" });
-        list.Add(new HomeItem { Kind = HomeKind.Library, Title = "Library", Glyph = "", IconKey = "library" });
+            list.Add(new HomeItem { Kind = HomeKind.Folder, Folder = f, Title = f.Name, Glyph = "îŸ´", IconKey = "tv" });
+        list.Add(new HomeItem { Kind = HomeKind.Library, Title = "Library", Glyph = "î£±", IconKey = "library" });
         _items = list;
         int idx = keepId == null ? -1 : _items.FindIndex(i => i.Id == keepId);
         if (idx < 0) idx = Math.Max(0, _items.FindIndex(i => i.Kind == HomeKind.Game));
@@ -323,7 +323,7 @@ public sealed class HomeScreen : Screen
             var parts = new List<string>();
             if (!string.IsNullOrEmpty(g.Year)) parts.Add(g.Year!);
             if (!string.IsNullOrEmpty(g.Publisher)) parts.Add(g.Publisher!);
-            _sub.Text = string.Join("   ·   ", parts.Where(p => p.Length > 0));
+            _sub.Text = string.Join("   Â·   ", parts.Where(p => p.Length > 0));
             _desc.Text = g.Description ?? "";
         }
         else
@@ -341,6 +341,99 @@ public sealed class HomeScreen : Screen
         AppSettings.Current.LastSelectedId = it.Id;
         BuildSubRow();
         ApplyBackground();
+        QueueProgress();
+    }
+
+    // ---- Trophies and Friends cards under the selected game (layout from the console, scaled to 1920x1080).
+    const double CardsY = 715, CardsX = FocusX + 17, CardW = 1100;
+    readonly Canvas _cards = new() { IsHitTestVisible = false };
+    DispatcherTimer? _progressTimer;
+
+    /// <summary>Loads after the selection rests for 0.6 s, so scrolling the row never fires requests.</summary>
+    void QueueProgress()
+    {
+        if (_cards.Parent == null) { Canvas.SetLeft(_cards, CardsX); Canvas.SetTop(_cards, CardsY); _row.Children.Add(_cards); }
+        _cards.Children.Clear();
+        _desc.Visibility = Visibility.Visible;
+        _progressTimer?.Stop();
+        if (_items.Count == 0 || _items[_sel].Game is not Game g || !GameProgress.Supported(g)) return;
+        if (GameProgress.TryCached(g, out var cached)) { ShowProgress(cached); return; }
+        _progressTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(600) };
+        _progressTimer.Tick += async (_, _) =>
+        {
+            _progressTimer!.Stop();
+            var p = await GameProgress.LoadAsync(g);
+            if (_items.Count > 0 && _items[_sel].Game?.Id == g.Id) ShowProgress(p);
+        };
+        _progressTimer.Start();
+    }
+
+    static readonly Geometry TrophyShape = Geometry.Parse("M14,4 H42 V14 C42,26 34,32 28,33 C22,32 14,26 14,14 Z M14,8 H6 C6,18 10,22 15,22 M42,8 H50 C50,18 46,22 41,22 M28,33 V42 M18,50 H38 L36,42 H20 Z");
+    static readonly string[] GradeColors = { "#D6E2F2", "#E9B949", "#C7CDD6", "#C98552" };
+
+    internal static FrameworkElement GradeIcon(int grade, double size) => new System.Windows.Shapes.Path
+    {
+        Data = TrophyShape, Fill = UiKit.B(GradeColors[grade]), Stroke = UiKit.B(GradeColors[grade]), StrokeThickness = 3,
+        Stretch = Stretch.Uniform, Width = size, Height = size,
+    };
+
+    static ImageSource? Web(string? url, int decode) => WhatsNewScreen.Web(url, decode);
+
+    void ShowProgress(GameProgress.Progress? p)
+    {
+        _cards.Children.Clear();
+        // The console shows no description under the title; it makes room for the cards when they appear.
+        _desc.Visibility = p == null ? Visibility.Visible : Visibility.Collapsed;
+        if (p == null) return;
+        if (!_fnMode && _subSel < 0) UiKit.FadeIn(_cards, 250);
+        void Put(UIElement el, double x, double y) { Canvas.SetLeft(el, x); Canvas.SetTop(el, y); _cards.Children.Add(el); }
+        void Section(string title, double x, double w)
+        {
+            Put(UiKit.Label(title, 28), x, -8);
+            Put(new Border { Width = w, Height = 1, Background = UiKit.B("#59FFFFFF") }, x, 30);
+        }
+
+        // Trophies: progress bar with the percentage and grade counts, the most recent trophy beside them.
+        Section("Trophies", 0, CardW);
+        Put(UiKit.Label("Progress", 22, UiKit.Dim), 45, 66);
+        var pct = UiKit.Label($"{p.Percent}%", 22, UiKit.Dim);
+        pct.Width = 545; pct.TextAlignment = TextAlignment.Right;
+        Put(pct, 45, 66);
+        Put(new Border { Width = 545, Height = 6, BorderBrush = UiKit.B("#80FFFFFF"), BorderThickness = new Thickness(1) }, 45, 102);
+        Put(new Border { Width = 545 * p.Percent / 100.0, Height = 6, Background = Brushes.White }, 45, 102);
+        for (int i = 0; i < 4; i++)
+        {
+            Put(GradeIcon(i, 50), 45 + i * 145, 150);
+            Put(UiKit.Label(p.Earned[i].ToString(), 30), 45 + i * 145 + 60, 162);
+        }
+        if (p.Recent is { } r)
+        {
+            Put(UiKit.Label("Most Recent Trophy", 22, UiKit.Dim), 700, 66);
+            var icon = Web(r.Icon, 128);
+            if (icon != null) Put(new Image { Source = icon, Width = 84, Height = 84 }, 700, 122);
+            double x = icon != null ? 800 : 700;
+            Put(GradeIcon(r.Grade, 38), x, 144);
+            var name = UiKit.Label(r.Name, 28);
+            name.Width = (p.Friends.Count > 0 ? CardW : UiKit.W - CardsX - 60) - x - 48; name.MaxHeight = 84; name.TextWrapping = TextWrapping.Wrap; name.TextTrimming = TextTrimming.WordEllipsis;
+            Put(name, x + 48, 142);
+        }
+
+        // Friends: who plays it (playing now first) and how far they got.
+        if (p.Friends.Count == 0) return;
+        const double fx = CardW + 70, fw = UiKit.W - CardsX - fx - 60;
+        Section("Friends", fx, fw);
+        for (int i = 0; i < p.Friends.Count; i++)
+        {
+            var f = p.Friends[i];
+            double y = 56 + i * 68;
+            if (Web(f.Avatar, 96) is ImageSource av) Put(new Image { Source = av, Width = 52, Height = 52 }, fx + 20, y);
+            var n = UiKit.Label(f.Name, 24);
+            n.MaxWidth = fw - 250; n.TextTrimming = TextTrimming.CharacterEllipsis;
+            Put(n, fx + 88, y - 2);
+            Put(UiKit.Label(f.PlayingNow ? "Playing now" : $"{f.Percent}% trophies", 20, f.PlayingNow ? UiKit.B("#7FD0FF") : UiKit.Dim), fx + 88, y + 26);
+            Put(new Border { Width = 120, Height = 4, BorderBrush = UiKit.B("#80FFFFFF"), BorderThickness = new Thickness(1) }, fx + fw - 140, y + 24);
+            Put(new Border { Width = 120 * f.Percent / 100.0, Height = 4, Background = Brushes.White }, fx + fw - 140, y + 24);
+        }
     }
 
     // ---- Folder contents (TV & Video), like the console: a preview row under the focused folder; Down slides the
@@ -392,7 +485,7 @@ public sealed class HomeScreen : Screen
         if (open != _subWasOpen) { _subWasOpen = open; Layout(true, details: false); }
         // Lift the home row so only its bottom edge shows; the grid lands at GridTop on screen.
         UiKit.Animate(_rowShift, TranslateTransform.YProperty, open ? -RowLift : 0, 260);
-        foreach (var el in new UIElement[] { _info, _titleBlock, _startBar }) UiKit.Animate(el, OpacityProperty, open ? 0 : 1, 200);
+        foreach (var el in new UIElement[] { _info, _titleBlock, _startBar, _cards }) UiKit.Animate(el, OpacityProperty, open ? 0 : 1, 200);
         _focus.Visibility = open ? Visibility.Hidden : Visibility.Visible;
         int row = Math.Max(0, _subSel) / SubCols;
         double scroll = Math.Max(0, row - 1) * SubPitchY;
@@ -476,7 +569,7 @@ public sealed class HomeScreen : Screen
         const int ms = 300;
         // The home row drops to the bottom edge with every tile small; the status bar fades, the function row comes down.
         UiKit.Animate(_rowShift, TranslateTransform.YProperty, on ? FnRowDrop : 0, ms);
-        foreach (var el in new UIElement[] { _statusIcons, _titleBlock, _startBar, _focus }) UiKit.Animate(el, OpacityProperty, on ? 0 : 1, ms / 2);
+        foreach (var el in new UIElement[] { _statusIcons, _titleBlock, _startBar, _focus, _cards }) UiKit.Animate(el, OpacityProperty, on ? 0 : 1, ms / 2);
         UiKit.Animate(_fnLayer, OpacityProperty, on ? 1 : 0, ms);
         _fnShift.Y = on ? -120 : 0;
         UiKit.Animate(_fnShift, TranslateTransform.YProperty, on ? 0 : -120, ms);
