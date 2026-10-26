@@ -182,6 +182,7 @@ public sealed class LaunchService
         bool running = false;
         while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
         {
+            Steam.MinimizeWindows(); // the desktop client can pop up while the game starts
             running = isShortcut ? Pids(null, dir).Count > 0 : SteamRunningAppId() == g.SteamAppId;
             if (running)
             {

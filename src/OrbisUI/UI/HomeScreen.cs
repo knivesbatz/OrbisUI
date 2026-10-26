@@ -320,7 +320,7 @@ public sealed class HomeScreen : Screen
         _startText.Text = it.Kind == HomeKind.Game ? "Start" : "Open";
         if (it.Game is Game g)
         {
-            var parts = new List<string> { Tiles.PlatformLabel(g.Platform) };
+            var parts = new List<string>();
             if (!string.IsNullOrEmpty(g.Year)) parts.Add(g.Year!);
             if (!string.IsNullOrEmpty(g.Publisher)) parts.Add(g.Publisher!);
             _sub.Text = string.Join("   ·   ", parts.Where(p => p.Length > 0));
@@ -544,6 +544,6 @@ public sealed class HomeScreen : Screen
     internal static void SteamHandoff(string url, string what)
     {
         if (Steam.FindInstall() == null) { Shell.Message(what, "Steam isn't installed, so this isn't available yet. Install Steam and sign in, then try again."); return; }
-        Steam.OpenUrl(url);
+        _ = Steam.OpenInBigPicture(url);
     }
 }

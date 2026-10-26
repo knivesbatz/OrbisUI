@@ -25,9 +25,9 @@ public static class FriendsScreen
                 {
                     Glyph = f.Game != null ? "" : f.State > 0 ? "" : "",
                     Label = f.Name, Sub = () => SteamActivity.StateText(f), Value = () => f.State > 0 ? "●" : null,
-                    Activate = () => Steam.OpenUrl("steam://friends/message/" + f.SteamId),
+                    Activate = () => _ = Steam.OpenInBigPicture("steam://friends/message/" + f.SteamId),
                 }).ToList();
-                items.Add(new ListItem { Glyph = "", Label = "Open Steam Friends", Sub = () => "Add friends, groups and the full chat", Activate = () => Steam.OpenUrl(Steam.Links.Friends) });
+                items.Add(new ListItem { Glyph = "", Label = "Open Steam Friends", Sub = () => "Add friends, groups and the full chat", Activate = () => _ = Steam.OpenInBigPicture(Steam.Links.Friends) });
                 Shell.Push(new ListScreen(title, items, subtitle: friends.Count == 0 ? "Steam didn't share a friends list. In Steam, set Profile > Privacy > Friends List to Public." : $"{online} online · {friends.Count} friends",
                     hints: new[] { (Btn.Cross, "Send Message"), (Btn.Circle, "Back") }));
             });

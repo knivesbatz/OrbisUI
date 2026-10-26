@@ -15,7 +15,8 @@ public static class Program
     {
         using var single = new Mutex(true, "OrbisUI.SingleInstance", out bool first);
         using var wake = new EventWaitHandle(false, EventResetMode.AutoReset, "OrbisUI.Wake");
-        if (!first)
+        // Scripted test runs may sit beside the user's own copy.
+        if (!first && Environment.GetEnvironmentVariable("ORBISUI_SCRIPT") == null)
         {
             wake.Set(); // ask the running copy to come to the front
             return 0;

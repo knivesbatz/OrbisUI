@@ -112,7 +112,7 @@ public sealed class WhatsNewScreen : Screen
             case Btn.Up when _sel > 0: _sel--; Play(Sfx.Cursor); Place(); break;
             case Btn.Down when _sel < _items.Count - 1: _sel++; Play(Sfx.Cursor); Place(); break;
             case Btn.Square: Play(Sfx.Option); _ = Load(true); break;
-            case Btn.Cross when _items.Count > 0 && _items[_sel].AppId is string app: Play(Sfx.Decide); Steam.OpenUrl(Steam.Links.StorePage(app)); break;
+            case Btn.Cross when _items.Count > 0 && _items[_sel].AppId is string app: Play(Sfx.Decide); _ = Steam.OpenInBigPicture(Steam.Links.StorePage(app)); break;
             case Btn.Circle: Play(Sfx.Back); Shell.Pop(); break;
         }
         return true;

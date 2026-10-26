@@ -22,7 +22,7 @@ public static class PowerMenu
             new ListItem { Glyph = "", Label = "Turn Off", Activate = () => Confirmed("Turn off the device?", () => Run("shutdown.exe", "/s /t 0")) },
             new ListItem { Glyph = "", Label = "Restart", Activate = () => Confirmed("Restart the device?", () => Run("shutdown.exe", "/r /t 0")) },
             new ListItem { Glyph = "", Label = "Exit to Windows Desktop", Activate = () => { Shell.Pop(); Shell.Window.ExitToDesktop(); } },
-            new ListItem { Glyph = "", Label = "Open Steam Big Picture", Activate = () => { Shell.Pop(); Steam.OpenUrl(Steam.Links.BigPicture); } },
+            new ListItem { Glyph = "", Label = "Open Steam Big Picture", Activate = () => { Shell.Pop(); _ = Steam.OpenInBigPicture(null); } },
         }, dialog: true));
     }
 

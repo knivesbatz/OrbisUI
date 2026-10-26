@@ -33,7 +33,8 @@ public static class Steam
     public static void EnsureRunningSilently()
     {
         var root = FindInstall();
-        if (root == null || IsRunning()) return;
+        if (root == null) return;
+        if (IsRunning()) { MinimizeWindows(); return; }
         try
         {
             Process.Start(new ProcessStartInfo(Path.Combine(root, "steam.exe"), "-silent") { UseShellExecute = false, WorkingDirectory = root });
@@ -195,13 +196,59 @@ public static class Steam
         catch (Exception ex) { Log.Warn($"steam url {url}: {ex.Message}"); }
     }
 
+    public static bool BigPictureOpen() => Native.FindWindow(null, "Steam Big Picture Mode") != IntPtr.Zero;
+
+    /// <summary>Opens Big Picture, waits for it, then sends <paramref name="url"/> so the page opens inside Big Picture
+    /// (Steam opens it in the desktop client otherwise).</summary>
+    public static async Task OpenInBigPicture(string? url)
+    {
+        if (!BigPictureOpen())
+        {
+            // The first request is sometimes ignored while Steam sits silent in the tray, so ask again every 5 s.
+            for (int i = 0; i < 60 && !BigPictureOpen(); i++)
+            {
+                if (i % 10 == 0) OpenUrl(Links.BigPicture);
+                await Task.Delay(500);
+            }
+            await Task.Delay(2000); // Big Picture drops URLs until its UI has loaded
+        }
+        if (url != null) OpenUrl(url);
+        if (_watching || !BigPictureOpen()) return;
+        _watching = true;
+        while (BigPictureOpen()) await Task.Delay(1000);
+        _watching = false;
+        // Leaving Big Picture brings up the desktop client a moment later, so minimize twice.
+        MinimizeWindows();
+        BigPictureClosed?.Invoke();
+        await Task.Delay(1500);
+        MinimizeWindows();
+    }
+
+    static bool _watching;
+    /// <summary>Raised after Big Picture (opened through <see cref="OpenInBigPicture"/>) closes and Steam is minimized.</summary>
+    public static event Action? BigPictureClosed;
+
+    /// <summary>Minimizes Steam's visible top-level windows (the client and its web helper windows).</summary>
+    public static void MinimizeWindows()
+    {
+        var pids = Process.GetProcessesByName("steam").Concat(Process.GetProcessesByName("steamwebhelper")).Select(p => p.Id).ToHashSet();
+        if (pids.Count == 0) return;
+        Native.EnumWindows((h, _) =>
+        {
+            if (Native.IsWindowVisible(h) && !Native.IsIconic(h) && Native.GetWindow(h, 4 /*GW_OWNER*/) == IntPtr.Zero
+                && Native.GetWindowThreadProcessId(h, out uint pid) != 0 && pids.Contains((int)pid))
+                Native.ShowWindow(h, Native.SW_MINIMIZE);
+            return true;
+        }, IntPtr.Zero);
+    }
+
     /// <summary>Steam Big Picture handoffs (they bring Steam to the foreground).</summary>
     public static class Links
     {
         public const string BigPicture = "steam://open/bigpicture";
         public const string Store = "steam://store";
         public const string Friends = "steam://open/friends";
-        public const string Chat = "steam://open/chat";
+        public const string Chat = "steam://open/friends"; // Big Picture ignores open/chat; its friends panel holds the chats
         public const string Profile = "steam://url/SteamIDMyProfile";
         public const string Achievements = "steam://open/achievements";
         public static string Run(string appId) => "steam://rungameid/" + appId;

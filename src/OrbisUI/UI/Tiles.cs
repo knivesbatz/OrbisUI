@@ -90,13 +90,6 @@ public static class Tiles
             Margin = new Thickness(size * 0.08), MaxHeight = size * 0.7, TextTrimming = TextTrimming.WordEllipsis,
         };
         g.Children.Add(t);
-        var badge = new Border
-        {
-            Background = UiKit.B("#AA000000"), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(size * 0.05),
-            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom,
-            Child = new TextBlock { Text = PlatformLabel(platform), Foreground = Brushes.White, FontSize = size * 0.065, FontFamily = UiKit.FontRegular },
-        };
-        g.Children.Add(badge);
         return g;
     }
 }

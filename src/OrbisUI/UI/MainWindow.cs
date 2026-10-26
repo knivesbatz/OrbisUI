@@ -33,6 +33,7 @@ public sealed class MainWindow : Window
     readonly Grid _splashFallback = new() { Width = 420, Height = 420 };
     readonly TextBlock _splashTitle = UiKit.Label("", 44);
     readonly TextBlock _splashStatus = UiKit.Label("", 26, UiKit.Dim);
+    readonly Image _splashBg = new() { Stretch = Stretch.UniformToFill };
     readonly Path _spinner = new() { Width = 46, Height = 46, Stroke = UiKit.Focus, StrokeThickness = 4, Data = Geometry.Parse("M23,2 A21,21 0 1 1 2,23"), RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new RotateTransform() };
 
     // Toast
@@ -67,6 +68,7 @@ public sealed class MainWindow : Window
         Shell.Window = this;
         Shell.Launcher.Ready += (g, h) => Dispatcher.BeginInvoke(() => OnGameReady(g, h));
         Shell.Launcher.Exited += g => Dispatcher.BeginInvoke(() => OnGameExited(g));
+        Steam.BigPictureClosed += () => Dispatcher.BeginInvoke(() => { if (!_gameInFront) RestoreShell(); });
         Shell.Launcher.Status += (g, s) => Dispatcher.BeginInvoke(() => _splashStatus.Text = s);
 
         Activated += (_, _) => { if (Shell.Pad != null) Shell.Pad.Foreground = true; Background_.SetRunning(true); Sound.Muted = false; SyncMusic(); };
@@ -152,6 +154,7 @@ public sealed class MainWindow : Window
                 if (raw == "settings") { Shell.Push(SettingsScreens.Root()); continue; }
                 if (raw == "trophies") { TrophiesScreen.Open(); continue; }
                 if (raw == "friends") { FriendsScreen.Open(false); continue; }
+                if (raw.StartsWith("launch:")) { StartGame(Shell.Library.Games.First(g => g.Title.Contains(raw[7..], StringComparison.OrdinalIgnoreCase))); continue; }
                 if (raw == "gametoast") { GameToast.Show("PRO Mode Active", "Frame generation is on for this game.", "\uE945"); continue; }
                 if (Enum.TryParse<Btn>(raw, true, out var b)) Shell.Dispatch(b);
                 await Task.Delay(250);
@@ -279,6 +282,7 @@ public sealed class MainWindow : Window
 
     void OnGameReady(Game g, IntPtr hwnd)
     {
+        if (hwnd != IntPtr.Zero && _splash.Visibility == Visibility.Visible && _splashBg.Source != null) HoldSplashUntilFocused(hwnd);
         HideSplash();
         if (hwnd != IntPtr.Zero) SendGameToFront();
         else Log.Warn($"No window detected for {g.Title}; leaving the launcher visible");
@@ -387,6 +391,7 @@ public sealed class MainWindow : Window
         _splashStatus.Margin = new Thickness(18, 0, 0, 0); _splashStatus.VerticalAlignment = VerticalAlignment.Center;
         row.Children.Add(_splashStatus);
         sp.Children.Add(row);
+        _splash.Children.Add(_splashBg);
         _splash.Children.Add(sp);
         var hint = UiKit.Hints((Btn.Circle, "Stop Waiting"));
         hint.VerticalAlignment = VerticalAlignment.Bottom; hint.HorizontalAlignment = HorizontalAlignment.Right; hint.Margin = new Thickness(0, 0, 60, 40);
@@ -402,10 +407,14 @@ public sealed class MainWindow : Window
         _splashFallback.Children.Clear();
         if (_splashArt.Source == null) _splashFallback.Children.Add(Tiles.Make(new HomeItem { Kind = HomeKind.Game, Game = g, Title = g.Title }, 420));
         Background_.SetArt(g.BgSource == "SteamGridDB" ? g.Background : null);
+        // The SteamGridDB background is the whole splash; without one, the cover, title and spinner stay.
+        _splashBg.Source = g.BgSource == "SteamGridDB" ? Metadata.ImageTools.LoadForDisplay(g.Background, 1920) : null;
+        _splashBg.Visibility = _splashBg.Source != null ? Visibility.Visible : Visibility.Collapsed;
+        ((StackPanel)_splash.Children[1]).Visibility = _splashBg.Source != null ? Visibility.Collapsed : Visibility.Visible;
         _splash.Visibility = Visibility.Visible;
         _splash.Opacity = 0;
         SyncMusic();
-        var art = (FrameworkElement)((StackPanel)_splash.Children[0]).Children[0];
+        var art = (FrameworkElement)((StackPanel)_splash.Children[1]).Children[0];
         art.RenderTransformOrigin = new Point(0.5, 0.5);
         var st = new ScaleTransform(0.86, 0.86);
         art.RenderTransform = st;
@@ -415,6 +424,30 @@ public sealed class MainWindow : Window
         var spin = new DoubleAnimation(0, 360, TimeSpan.FromSeconds(1)) { RepeatBehavior = RepeatBehavior.Forever };
         Timeline.SetDesiredFrameRate(spin, 30);
         ((RotateTransform)_spinner.RenderTransform).BeginAnimation(RotateTransform.AngleProperty, spin);
+    }
+
+    /// <summary>The shell minimizes when the game comes forward, so the background moves to a topmost, non-activating
+    /// window that fades out once the game window has focus (or after 10 s).</summary>
+    void HoldSplashUntilFocused(IntPtr game)
+    {
+        // shortcut: covers the primary screen only, fine on the Ally; use the game window's monitor for multi-screen setups.
+        var w = new Window
+        {
+            WindowStyle = WindowStyle.None, AllowsTransparency = true, ResizeMode = ResizeMode.NoResize, ShowInTaskbar = false,
+            Topmost = true, ShowActivated = false, Focusable = false, IsHitTestVisible = false, Background = Brushes.Black,
+            Left = 0, Top = 0, Width = SystemParameters.PrimaryScreenWidth, Height = SystemParameters.PrimaryScreenHeight,
+            Content = new Image { Source = _splashBg.Source, Stretch = Stretch.UniformToFill },
+        };
+        w.Show();
+        var started = DateTime.UtcNow;
+        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        t.Tick += (_, _) =>
+        {
+            if (Native.GetForegroundWindow() != game && Native.IsWindow(game) && DateTime.UtcNow - started < TimeSpan.FromSeconds(10)) return;
+            t.Stop();
+            UiKit.Animate(w, OpacityProperty, 0, 600, w.Close);
+        };
+        t.Start();
     }
 
     void HideSplash()

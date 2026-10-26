@@ -18,7 +18,7 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 | ![Home with game art and background](docs/screenshots/home-bg.png) | ![Function row](docs/screenshots/fn.png) |
 | ![Library](docs/screenshots/library.png) | ![Game options](docs/screenshots/options.png) |
 
-**Latest release:** [v0.4.3](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.4.4](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
 ## Features (implemented)
 
@@ -32,6 +32,7 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 - File Manager in Settings: drives and folders, copy, move, rename, new folder, delete to the Recycle Bin
 - PS4 PKG installer in the File Manager: games, updates and DLC extracted for shadPS4
 - Friends and Messages: your Steam friends, who's online and what they're playing; Cross opens a chat in Steam
+- Steam friends, chat, profile and store open in Big Picture; Steam starts in the background and goes back to minimized (with OrbisUI in front) when Big Picture closes
 - Notifications, power menu, setup wizard, on-screen keyboard
 - DUALSHOCK 4 named as on the console; its battery level shows in the notification when it connects
 
@@ -39,7 +40,7 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 - Steam games and shortcuts, PC games from .exe, .lnk, .url or Microsoft Store apps, PS1/PS2/PS3/PS4/PSP/Vita games from one ROM folder, multi-disc grouping with a disc picker
 - Game versions: add other exes, shortcuts or Store apps in Game Settings, then pick one before launch
 - SteamGridDB artwork by default (retried after offline starts), controller cover picker, backgrounds after 5 s
-- Launch splash fades in and holds until the game is fullscreen; PS button returns home over a running game
+- Launch splash fades into the game's SteamGridDB background and fades out once the game has focus (cover and title when there's no background); Steam games launch with Steam kept minimized; PS button returns home over a running game
 - Uninstall or Delete in game Options with two confirmations (Steam, Store and registered uninstallers, otherwise the Recycle Bin); uninstalled games leave the library on their own
 - Emulated and added games are added to Steam with SteamGridDB art so they run with the Big Picture overlay
 - Emulators tuned for the Ally by default: Vulkan, no OSD, fast boot (BIOS and splash skipped) and 16:9/720p-class rendering for DuckStation, PCSX2, PPSSPP, RPCS3 and Vita3K, shadPS4 splash off; configs backed up first
@@ -65,6 +66,7 @@ Only open work is listed here; everything shipped is under Features.
 7. Finish the emulator test pass: Persona 3 FES (PS2) boots but no picture was captured, Gravity Rush (Vita) boot not confirmed
 8. SONYRESOURCES backup folder: drop it into a new OrbisUI folder to restore emulators, firmware and media (folder built, auto-import unfinished)
 9. Texture packs: no trusted source to download them from (#27)
+10. Trophy and friend progress cards under the selected game on the home screen
 
 ## Install (portable)
 

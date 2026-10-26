@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.4 (2026-10-26)
+- Steam friends, chat, profile and store pages open in Steam Big Picture. When Big Picture closes, Steam goes back to minimized and OrbisUI comes back to the front.
+- Steam games launch with Steam kept minimized instead of popping up the Steam window; Steam also starts in the background with OrbisUI.
+- The launch splash fades into the game's SteamGridDB background and only fades out once the game is running and in focus. Games without a SteamGridDB background keep the cover, title and spinner.
+- The platform label ("PC", "PS2" and so on) no longer shows next to game names or on fallback tiles.
+
 ## 0.4.3 (2026-10-24)
 - Uninstall or Delete from a game's Options: Steam and Microsoft Store games use their own uninstallers, PC games the uninstaller Windows has for them, and ROMs or PS3/PS4/Vita game folders go to the Recycle Bin. Two confirmations come first, each starting on Cancel.
 - Added PC games and Store apps that were uninstalled drop out of the library on the next scan (Steam and ROM games already did).
