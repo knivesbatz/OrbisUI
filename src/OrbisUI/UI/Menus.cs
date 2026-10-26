@@ -80,7 +80,6 @@ public static class GameMenu
         {
             new() { Glyph = "", Label = "Platform", Value = () => Tiles.PlatformLabel(g.Platform) },
             new() { Glyph = "", Label = "Launches with", Value = () => g.Kind switch { LaunchKind.Steam or LaunchKind.SteamShortcut => "Steam", LaunchKind.Emulator => Emulators.Get(g.Platform)?.Name, _ => "Windows" } },
-            new() { Glyph = "", Label = "Released", Value = () => g.Year ?? "Unknown" },
             new() { Glyph = "", Label = "Publisher", Value = () => g.Publisher ?? "Unknown" },
             new() { Glyph = "", Label = "Genre", Value = () => g.Genres ?? "Unknown" },
             new() { Glyph = "", Label = "Size", Value = () => Size(g.SizeBytes) },
@@ -88,8 +87,6 @@ public static class GameMenu
             new() { Glyph = "", Label = "Details source", Value = () => g.MetaSource ?? "None found" },
             new() { Glyph = "", Label = "Location", Sub = () => g.Path ?? g.InstallDir ?? g.SteamAppId },
         };
-        if (!string.IsNullOrEmpty(g.Description))
-            items.Insert(0, new() { Glyph = "", Label = "About", Sub = () => g.Description!.Length > 160 ? g.Description[..160] + "…" : g.Description });
         return new ListScreen(LibraryService.DisplayTitle(g), items);
     }
 

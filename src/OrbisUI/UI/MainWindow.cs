@@ -39,9 +39,10 @@ public sealed class MainWindow : Window
     /// <summary>The whole hero image, never cropped (wide heroes lost their subject when filled), over a blurred, darkened fill of itself.</summary>
     static Grid SplashArt(ImageSource src)
     {
+        // Stretched to fill the screen and softly blurred; the cover sits on top of it.
         var g = new Grid { Background = Brushes.Black, ClipToBounds = true };
-        g.Children.Add(new Image { Source = src, Stretch = Stretch.UniformToFill, Opacity = 0.45, Effect = new System.Windows.Media.Effects.BlurEffect { Radius = 60 } });
-        g.Children.Add(new Image { Source = src, Stretch = Stretch.Uniform });
+        g.Children.Add(new Image { Source = src, Stretch = Stretch.UniformToFill, Margin = new Thickness(-40), Effect = new System.Windows.Media.Effects.BlurEffect { Radius = 28, KernelType = System.Windows.Media.Effects.KernelType.Gaussian } });
+        g.Children.Add(new Border { Background = UiKit.B("#59000000") });
         return g;
     }
     readonly Path _spinner = new() { Width = 46, Height = 46, Stroke = UiKit.Focus, StrokeThickness = 4, Data = Geometry.Parse("M23,2 A21,21 0 1 1 2,23"), RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new RotateTransform() };
@@ -309,7 +310,7 @@ public sealed class MainWindow : Window
         var rsLog = ReShade.LogFor(g);
         if (hwnd != IntPtr.Zero && _splash.Visibility == Visibility.Visible && (_splashSrc != null || rsLog != null)) HoldSplashUntilFocused(g, hwnd, rsLog);
         HideSplash();
-        if (hwnd != IntPtr.Zero) SendGameToFront();
+        if (hwnd != IntPtr.Zero) { SendGameToFront(); KeepGameFocused(g); }
         else Log.Warn($"No window detected for {g.Title}; leaving the launcher visible");
         _ = LosslessScaling.ActivateAsync(g, hwnd, () => Shell.Launcher.Running?.Id == g.Id);
     }
@@ -328,6 +329,25 @@ public sealed class MainWindow : Window
         // While a game runs the shell should cost nothing: stop animation, drop caches.
         Background_.SetRunning(false);
         Native.TrimMemory();
+    }
+
+    /// <summary>Some games open behind other windows or without keyboard/controller focus. For the first 8 s after the
+    /// window appears, pull it to the front whenever it isn't, and stop once it has held focus for a second.</summary>
+    void KeepGameFocused(Game g)
+    {
+        var started = DateTime.UtcNow;
+        int held = 0;
+        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        t.Tick += (_, _) =>
+        {
+            var gw = Shell.Launcher.GameWindow;
+            if (!_gameInFront || Shell.Launcher.Running?.Id != g.Id || gw == IntPtr.Zero || DateTime.UtcNow - started > TimeSpan.FromSeconds(8)) { t.Stop(); return; }
+            if (Native.GetForegroundWindow() == gw) { if (++held >= 2) t.Stop(); return; }
+            held = 0;
+            Log.Info($"{g.Title} lost focus at start; bringing it to the front");
+            Native.ForceForeground(gw);
+        };
+        t.Start();
     }
 
     void ShowHomeOverGame()
@@ -437,11 +457,10 @@ public sealed class MainWindow : Window
         _splashFallback.Children.Clear();
         if (_splashArt.Source == null) _splashFallback.Children.Add(Tiles.Make(new HomeItem { Kind = HomeKind.Game, Game = g, Title = g.Title }, 420));
         Background_.SetArt(g.BgSource == "SteamGridDB" ? g.Background : null);
-        // The SteamGridDB background is the whole splash; without one, the cover, title and spinner stay.
+        // The SteamGridDB hero, blurred, fills the screen behind the cover, title and spinner.
         _splashSrc = g.BgSource == "SteamGridDB" ? Metadata.ImageTools.LoadForDisplay(g.Background, 1920) : null;
         _splashBg.Children.Clear();
         if (_splashSrc != null) _splashBg.Children.Add(SplashArt(_splashSrc));
-        ((StackPanel)_splash.Children[1]).Visibility = _splashSrc != null ? Visibility.Collapsed : Visibility.Visible;
         _splash.Visibility = Visibility.Visible;
         _splash.Opacity = 0;
         SyncMusic();
@@ -468,8 +487,10 @@ public sealed class MainWindow : Window
             WindowStyle = WindowStyle.None, AllowsTransparency = true, ResizeMode = ResizeMode.NoResize, ShowInTaskbar = false,
             Topmost = true, ShowActivated = false, Focusable = false, IsHitTestVisible = false, Background = Brushes.Black,
             Left = 0, Top = 0, Width = SystemParameters.PrimaryScreenWidth, Height = SystemParameters.PrimaryScreenHeight,
-            Content = _splashSrc != null ? SplashArt(_splashSrc) : new Image { Source = _splashArt.Source, Width = 420 },
         };
+        var content = _splashSrc != null ? SplashArt(_splashSrc) : new Grid();
+        content.Children.Add(new Image { Source = _splashArt.Source, Width = 420, Height = 420 });
+        w.Content = content;
         w.Show();
         var started = DateTime.UtcNow;
         long logSize = -1;
