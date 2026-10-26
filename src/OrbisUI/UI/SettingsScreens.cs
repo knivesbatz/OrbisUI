@@ -183,12 +183,19 @@ public static class SettingsScreens
         new ListItem { Glyph = "\uE83F", Label = "Power and Battery", Activate = () => WinSettings("ms-settings:powersleep") },
     });
 
-    internal static Screen WifiScreen()
+    /// <summary>Shows the cached list at once, then scans in the background and refreshes; <paramref name="scanned"/> stops the loop.</summary>
+    internal static Screen WifiScreen(bool scanned = false)
     {
         List<Devices.Network> nets;
         try { nets = Devices.WifiNetworks(); }
         catch (Exception ex) { return new ListScreen("Wi-Fi", new[] { new ListItem { Glyph = "\uE783", Label = "Wi-Fi isn't available", Sub = () => ex.Message } }); }
-        void Reopen() { Shell.Pop(); Shell.Push(WifiScreen()); }
+        void Reopen() { Shell.Pop(); Shell.Push(WifiScreen(true)); }
+        void Scan() => Task.Run(() =>
+        {
+            try { Devices.ScanWifi(); } catch (Exception ex) { Log.Warn("Wi-Fi scan: " + ex.Message); }
+            Shell.Window.Dispatcher.Invoke(() => { if (Shell.Top is ListScreen { Tag: "wifi" }) Reopen(); });
+        });
+        if (!scanned) Scan();
         void Join(Devices.Network n, string? pw)
         {
             Shell.Toast("Wi-Fi", "Connecting to " + n.Ssid, "\uE701");
@@ -201,8 +208,9 @@ public static class SettingsScreens
         }
         var items = nets.Select(n => new ListItem
         {
-            Glyph = n.Connected ? "\uE701" : Devices.IsOpen(n) ? "\uE701" : "\uE72E", Label = n.Ssid,
-            Sub = () => (n.Connected ? "Connected \u00B7 " : n.Saved ? "Saved \u00B7 " : "") + n.Auth, Value = () => $"{n.Signal}%",
+            // Segoe signal-bar glyphs: one, two, three bars, full.
+            Glyph = n.Signal < 25 ? "\uE872" : n.Signal < 50 ? "\uE873" : n.Signal < 75 ? "\uE874" : "\uE701", Label = n.Ssid,
+            Sub = () => (n.Connected ? "Connected \u00B7 " : n.Saved ? "Saved \u00B7 " : "") + (Devices.IsOpen(n) ? "Open" : "Secured \u00B7 " + n.Auth), Value = () => $"{n.Signal}%",
             Activate = () =>
             {
                 if (n.Connected) Shell.Confirm("Wi-Fi", $"Disconnect from {n.Ssid}?", () => { Devices.Disconnect(); Reopen(); }, "Disconnect", "Cancel");
@@ -210,9 +218,9 @@ public static class SettingsScreens
                 else Osk.Ask("Password for " + n.Ssid, "", pw => Join(n, pw), secret: true);
             },
         }).ToList();
-        items.Add(new ListItem { Glyph = "\uE72C", Label = "Scan Again", Activate = Reopen });
+        items.Add(new ListItem { Glyph = "\uE72C", Label = "Scan Again", Activate = () => { Shell.Toast("Wi-Fi", "Scanning for networks", ""); Scan(); } });
         items.Add(new ListItem { Glyph = "\uE713", Label = "Windows Wi-Fi Settings", Activate = () => WinSettings("ms-settings:network-wifi") });
-        return new ListScreen("Wi-Fi", items, subtitle: $"{nets.Count} networks") { Tag = "wifi" };
+        return new ListScreen("Wi-Fi", items, subtitle: scanned ? $"{nets.Count} networks" : "Scanning…") { Tag = "wifi" };
     }
 
     internal static Screen AudioScreen()

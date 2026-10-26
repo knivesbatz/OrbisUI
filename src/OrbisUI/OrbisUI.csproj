@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>OrbisUI</AssemblyName>
     <RootNamespace>OrbisUI</RootNamespace>
-    <Version>0.4.5</Version>
+    <Version>0.4.6</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <InvariantGlobalization>true</InvariantGlobalization>

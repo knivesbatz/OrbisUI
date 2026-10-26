@@ -52,7 +52,7 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 - Controller Fixer: find and install PlayStation button prompt mods with backup and undo
 
 **System**
-- Wi-Fi and audio output pickers in the UI; Bluetooth opens Windows Settings
+- Wi-Fi scan with signal strength and connect/disconnect, and audio output picker, in the UI; Bluetooth opens Windows Settings
 - Display settings in the UI (resolution, refresh rate, brightness) with a 15 s revert timer
 - Portable folder, DPAPI-encrypted keys, low idle CPU, GitHub auto-updater with SHA-256 checks
 

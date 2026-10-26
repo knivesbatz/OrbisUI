@@ -1,6 +1,7 @@
 # Changelog
 
-## 0.4.6 (unreleased)
+## 0.4.6 (2026-10-26)
+- Wi-Fi: opening it starts a real scan, so every nearby network shows up (not only the cached one), each with signal bars, its strength and whether it is open or secured. Pick one to connect (the on-screen keyboard asks for the password) or the current one to disconnect.
 - Settings > Themes: the console's colour grid (Royal Blue, Gold, Dark Blue, Red, Teal, Purple, Pink, Gray). The theme tints the boot video as it plays, the home background and every blue accent; Royal Blue stays the default and costs nothing extra.
 
 ## 0.4.5 (2026-10-26)

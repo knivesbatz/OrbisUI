@@ -40,6 +40,38 @@ public static class Devices
         return list.GroupBy(n => n.Ssid).Select(g => g.MaxBy(n => n.Signal)!).OrderByDescending(n => n.Connected).ThenByDescending(n => n.Signal).ToList();
     }
 
+    /// <summary>
+    /// Asks every Wi-Fi adapter for a fresh scan and waits for it. netsh alone only reports the cached list, which while
+    /// connected is often just the current network. Blocks for a few seconds, so call it off the UI thread.
+    /// </summary>
+    public static void ScanWifi()
+    {
+        if (WlanOpenHandle(2, IntPtr.Zero, out _, out var h) != 0) return;
+        try
+        {
+            if (WlanEnumInterfaces(h, IntPtr.Zero, out var list) != 0) return;
+            try
+            {
+                int n = Marshal.ReadInt32(list);
+                for (int i = 0; i < n; i++)
+                {
+                    // WLAN_INTERFACE_INFO_LIST: two DWORDs, then 532-byte entries starting with the interface GUID.
+                    var guid = Marshal.PtrToStructure<Guid>(list + 8 + i * 532);
+                    WlanScan(h, ref guid, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                }
+            }
+            finally { WlanFreeMemory(list); }
+            Thread.Sleep(4000); // Windows finishes a scan within 4 s
+        }
+        finally { WlanCloseHandle(h, IntPtr.Zero); }
+    }
+
+    [DllImport("wlanapi.dll")] static extern int WlanOpenHandle(uint ver, IntPtr reserved, out uint negotiated, out IntPtr handle);
+    [DllImport("wlanapi.dll")] static extern int WlanCloseHandle(IntPtr handle, IntPtr reserved);
+    [DllImport("wlanapi.dll")] static extern int WlanEnumInterfaces(IntPtr handle, IntPtr reserved, out IntPtr list);
+    [DllImport("wlanapi.dll")] static extern int WlanScan(IntPtr handle, ref Guid iface, IntPtr ssid, IntPtr ie, IntPtr reserved);
+    [DllImport("wlanapi.dll")] static extern void WlanFreeMemory(IntPtr mem);
+
     public static bool IsOpen(Network n) => n.Auth.Equals("Open", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Connect to a network. New secured networks need the password; the temporary profile file is deleted right after import.</summary>
