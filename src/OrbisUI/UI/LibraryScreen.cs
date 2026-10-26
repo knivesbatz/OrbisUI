@@ -57,8 +57,6 @@ public sealed class LibraryScreen : Screen
         _filters.Add(new("All", "", _ => true));
         _filters.Add(new("Games", "", e => e.Game != null));
         _filters.Add(new("Applications", "", e => e.App != null));
-        foreach (var p in _all.Where(e => e.Game != null).Select(e => Tiles.PlatformLabel(e.Game!.Platform)).Distinct().OrderBy(p => p))
-            _filters.Add(new(p, "", e => e.Game != null && Tiles.PlatformLabel(e.Game.Platform) == p));
         _filter = Math.Clamp(_filter, 0, _filters.Count - 1);
         Apply();
     }
@@ -126,6 +124,14 @@ public sealed class LibraryScreen : Screen
                 : Tiles.Make(new HomeItem { Kind = HomeKind.App, App = e.App, Title = e.Title, Glyph = "" }, CellH);
             tile.HorizontalAlignment = HorizontalAlignment.Left;
             cell.Children.Add(tile);
+            // No platform grouping (user rule): a small badge on the tile says where the game comes from.
+            if (e.Game != null)
+                cell.Children.Add(new Border
+                {
+                    Background = UiKit.B("#AA000000"), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(6),
+                    HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom,
+                    Child = new TextBlock { Text = Tiles.PlatformLabel(e.Game.Platform), Foreground = System.Windows.Media.Brushes.White, FontSize = 15, FontFamily = UiKit.FontRegular },
+                });
             var name = UiKit.Label(e.Title, 24);
             name.TextWrapping = TextWrapping.Wrap; name.TextTrimming = TextTrimming.WordEllipsis; name.MaxHeight = 98;
             name.Margin = new Thickness(CellH + 10, 10, 10, 0); name.VerticalAlignment = VerticalAlignment.Top;
