@@ -27,7 +27,7 @@ public class ListScreen : Screen
     readonly StackPanel _rows = new();
     readonly TranslateTransform _scroll = new();
     readonly Border _focus = UiKit.FocusFrame();
-    readonly bool _dialog;
+    readonly bool _dialog, _side;
     readonly double _rowH;
     readonly double _viewH;
     int _sel;
@@ -35,15 +35,18 @@ public class ListScreen : Screen
     public Action<ListItem>? OnOptions { get; set; }
     public int Selected => _sel;
 
-    public override bool IsOverlay => _dialog;
+    public override bool IsOverlay => _dialog || _side;
 
-    public ListScreen(string title, IEnumerable<ListItem> items, bool dialog = false, string? subtitle = null, int select = 0, (Btn, string)[]? hints = null)
+    /// <param name="side">The console's options panel: a full-height black panel on the right, text only, white focus box.</param>
+    public ListScreen(string title, IEnumerable<ListItem> items, bool dialog = false, string? subtitle = null, int select = 0, (Btn, string)[]? hints = null, bool side = false)
     {
         _items = items.ToList();
-        _dialog = dialog;
-        _rowH = dialog ? 78 : 84;
-        double listW = dialog ? 820 : 1340, left = dialog ? (UiKit.W - 820) / 2 : 290, top = dialog ? 0 : 150;
-        _viewH = dialog ? Math.Min(_items.Count, 8) * _rowH : 820;
+        _dialog = dialog && !side;
+        _side = side;
+        dialog = _dialog;
+        _rowH = side ? 74 : dialog ? 78 : 84;
+        double listW = side ? 444 : dialog ? 820 : 1340, left = dialog ? (UiKit.W - 820) / 2 : 290, top = dialog ? 0 : 150;
+        _viewH = side ? Math.Min(_items.Count, 11) * _rowH : dialog ? Math.Min(_items.Count, 8) * _rowH : 820;
 
         FrameworkElement host;
         var viewport = new Canvas { Width = listW, Height = _viewH, ClipToBounds = true };
@@ -53,7 +56,20 @@ public class ListScreen : Screen
         _focus.Width = listW; _focus.Height = _rowH - 6; _focus.RenderTransform = new TranslateTransform();
         viewport.Children.Add(_focus);
 
-        if (dialog)
+        if (side)
+        {
+            // Measured from the menu tour (8:44): panel from x 1352, first row centred at y 280, rows 74 px apart.
+            _focus.BorderBrush = Brushes.White; _focus.BorderThickness = new Thickness(2); _focus.Effect = null;
+            _focus.Width = listW; _focus.Height = _rowH + 6;
+            viewport.Margin = new Thickness(8, 280 - _rowH / 2 - 6, 0, 0);
+            viewport.Height = _viewH + 12;
+            var panel = new Grid { Width = UiKit.W - 1352, HorizontalAlignment = HorizontalAlignment.Right, Background = UiKit.B("#F2000000"), RenderTransform = new TranslateTransform(UiKit.W - 1352, 0) };
+            viewport.HorizontalAlignment = HorizontalAlignment.Left; viewport.VerticalAlignment = VerticalAlignment.Top;
+            panel.Children.Add(viewport);
+            Children.Add(panel);
+            UiKit.Animate((TranslateTransform)panel.RenderTransform, TranslateTransform.XProperty, 0, 180);
+        }
+        else if (dialog)
         {
             Background = UiKit.B("#99000814");
             var panel = new StackPanel { Width = listW + 120, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
@@ -110,6 +126,13 @@ public class ListScreen : Screen
             var h = UiKit.Label(it.Label, 24, UiKit.Dim);
             h.VerticalAlignment = VerticalAlignment.Bottom; h.Margin = new Thickness(14, 0, 0, 10);
             g.Children.Add(h);
+            return g;
+        }
+        if (_side)
+        {
+            var t = UiKit.Label(it.Label, 28);
+            t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(18, 0, 18, 0);
+            g.Children.Add(t);
             return g;
         }
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(64) });

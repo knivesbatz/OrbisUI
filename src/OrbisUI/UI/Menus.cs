@@ -69,7 +69,7 @@ public static class GameMenu
         if (g.Id.StartsWith("exe:"))
             items.Add(new() { Glyph = "", Label = "Remove from Library", Activate = () => { Shell.Pop(); Shell.Confirm("Remove", $"Remove {g.Title} from the library? Files are not deleted.", () => { Shell.Library.RemoveManual(g.Id); _ = Shell.Library.RescanAsync(); }); } });
         items.Add(new() { Glyph = "", Label = "Hide from Home", Activate = () => { Shell.Pop(); AppSettings.Current.For(g.Id).Hidden = true; AppSettings.Current.Save(); Shell.Library.NotifyChanged(); } });
-        Shell.Push(new ListScreen(LibraryService.DisplayTitle(g), items, dialog: true));
+        Shell.Push(new ListScreen(LibraryService.DisplayTitle(g), items, side: true));
     }
 
     public static Screen InfoScreen(Game g)
