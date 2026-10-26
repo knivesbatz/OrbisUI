@@ -281,7 +281,9 @@ public sealed class MainWindow : Window
             return;
         }
         Sound.Play(Sfx.GameStart);
+        if (LosslessScaling.EnabledFor(g)) LosslessScaling.PatchAlsLauncher();
         ShowSplash(g);
+        LosslessScaling.KeepAutoLsHeadless();
         try
         {
             await Shell.Launcher.LaunchAsync(g, disc);
