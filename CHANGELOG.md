@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.6 (unreleased)
+- Settings > Themes: the console's colour grid (Royal Blue, Gold, Dark Blue, Red, Teal, Purple, Pink, Gray). The theme tints the boot video as it plays, the home background and every blue accent; Royal Blue stays the default and costs nothing extra.
+
 ## 0.4.5 (2026-10-26)
 - Trophies and Friends cards under the selected game, like the console: trophy progress, platinum/gold/silver/bronze counts and the most recent trophy, plus up to three friends with their progress (playing now first). Steam games use Steam achievements and friends (Steam Web API key); emulated games use RetroAchievements and the users you follow there. Grades come from rarity on Steam and points on RetroAchievements; finishing everything counts as the platinum.
 

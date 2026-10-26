@@ -27,7 +27,7 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 - Trophies and Friends cards under the selected game: progress, grade counts, most recent trophy and friends' progress (Steam achievements or RetroAchievements)
 - PlayStation Store and What's New tiles; What's New is an activity feed of you and your Steam friends (friends need a Steam Web API key)
 - Live video background, boot video that fades into home (PS skips it) and home music, from your own media in `Data\Media`
-- PS4 sound pack and icon pack (your files; repaired WAV headers), royal-blue theme, everything square-cornered
+- PS4 sound pack and icon pack (your files; repaired WAV headers), colour themes like the console's (Settings > Themes, royal blue by default, also tints the boot video), everything square-cornered
 - TV & Video folder: preview row, Down opens a 4-column app grid; apps added in Settings, renamed, with SteamGridDB or image-file art
 - Built-in controller-friendly web browser (Google by default)
 - File Manager in Settings: drives and folders, copy, move, rename, new folder, delete to the Recycle Bin

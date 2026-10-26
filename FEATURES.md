@@ -26,6 +26,7 @@ Legend: **Done + tested**: implemented and checked on the ROG Ally or by automat
 | File manager | Done + tested | In Settings. Drives and folders, copy, move, rename, new folder, delete to the Recycle Bin, open files, install .pkg |
 | Internet browser | Done + tested | WebView2, D-pad link navigation, Google by default |
 | What's New feed, Friends and Messages | Done + tested | Steam Web API key needed; friends need a public friends list; chat opens in Steam |
+| Colour themes | Done + tested | Settings > Themes grid; tints boot video, home background and accents (run-time pixel shader) |
 | Wi-Fi and audio output | Done + tested | Native lists; joining a new secured network asks for its password with the on-screen keyboard |
 | Bluetooth pairing | Partial | Opens Windows Bluetooth settings |
 | Display settings | Done + tested | Resolution, refresh rate, brightness, 15 s revert |
