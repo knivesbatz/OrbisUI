@@ -17,6 +17,7 @@ public static class SettingsScreens
         new ListItem { Glyph = "\uE7F4", Label = "TV & Video", Sub = () => "Add or remove apps and change their art", Activate = () => Shell.Push(new FolderScreen(S.Folders[0])) },
         new ListItem { Glyph = "\uE7FC", Label = "Emulators", Sub = () => "PS1, PS2, PS3, PS4, PSP and PS Vita", Activate = () => Shell.Push(EmulatorsScreen()) },
         new ListItem { Glyph = "\uE7F6", Label = "Sound and Screen", Activate = () => Shell.Push(SoundScreen()) },
+        new ListItem { Glyph = "\uE790", Label = "Themes", Sub = () => Theme.Current.Name, Activate = () => Shell.Push(Theme.Picker()) },
         new ListItem { Glyph = "\uE701", Label = "Network and Devices", Sub = () => "Wi-Fi, Bluetooth, audio devices", Activate = () => Shell.Push(DevicesScreen()) },
         new ListItem { Glyph = "\uE776", Label = "Accessibility", Activate = () => Shell.Push(AccessibilityScreen()) },
         new ListItem { Glyph = "\uE8D7", Label = "Accounts and Services", Sub = () => "Steam, SteamGridDB, IGDB", Activate = () => Shell.Push(AccountsScreen()) },

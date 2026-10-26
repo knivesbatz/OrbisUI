@@ -52,8 +52,12 @@ public static class Tiles
         {
             // Some pack icons are rounded squares; fill behind them with their own edge colour so every tile is square.
             // The Store bag has a transparent background; it sits on the same blue as the What's New tile.
-            g.Background = it.IconKey == "storetile" ? UiKit.B("#144EB4") : tileImg is BitmapSource bs ? new SolidColorBrush(EdgeColor(bs)) : null;
-            g.Children.Add(new Image { Source = tileImg, Stretch = Stretch.UniformToFill });
+            var edge = tileImg is BitmapSource bs ? EdgeColor(bs) : Colors.Transparent;
+            g.Background = it.IconKey == "storetile" ? UiKit.B("#144EB4") : new SolidColorBrush(Theme.Shift(edge));
+            // Blue pack tiles (What's New) follow the colour theme; the Store bag keeps its own colours.
+            var img = new Image { Source = tileImg, Stretch = Stretch.UniformToFill };
+            if (it.IconKey != "storetile" && Theme.Shift(edge) != edge) img.Effect = Theme.VideoEffect();
+            g.Children.Add(img);
             return g;
         }
         // System tiles (folders, library, apps): translucent panel with a large icon, like the console's app tiles.

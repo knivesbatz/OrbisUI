@@ -69,6 +69,8 @@ public sealed class AppSettings
     public bool BootAnimation { get; set; } = true;
     public bool ReducedMotion { get; set; }
     public bool HighContrast { get; set; }
+    /// <summary>Colour theme name from <see cref="UI.Theme.All"/>.</summary>
+    public string Theme { get; set; } = "Royal Blue";
     public bool AnimatedBackground { get; set; } = true;
     public bool UiSounds { get; set; } = true;
     public double UiVolume { get; set; } = 0.7;

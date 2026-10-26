@@ -66,6 +66,7 @@ public sealed class MainWindow : Window
         LosslessScaling.Activated += g => Dispatcher.BeginInvoke(() => GameToast.Show("PRO Mode Active", "Frame generation is on for this game.", "\uE945"));
 
         Shell.Window = this;
+        Background_.ApplyTheme();
         Shell.Launcher.Ready += (g, h) => Dispatcher.BeginInvoke(() => OnGameReady(g, h));
         Shell.Launcher.Exited += g => Dispatcher.BeginInvoke(() => OnGameExited(g));
         Steam.BigPictureClosed += () => Dispatcher.BeginInvoke(() => { if (!_gameInFront) RestoreShell(); });
@@ -116,6 +117,15 @@ public sealed class MainWindow : Window
     }
 
     bool _atHome;
+    /// <summary>Re-tints the background and rebuilds the screens so their colours follow the new theme; you stay on Themes.</summary>
+    public void ApplyTheme()
+    {
+        Background_.ApplyTheme();
+        Shell.Reset(new HomeScreen());
+        Shell.Push(SettingsScreens.Root());
+        Shell.Push(Theme.Picker());
+    }
+
     public void EnterHome() { _atHome = true; Shell.Reset(new HomeScreen()); SyncMusic(); }
 
     /// <summary>Home music plays only while the shell is in front at home with no game starting or running.</summary>

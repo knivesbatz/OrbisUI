@@ -21,22 +21,25 @@ public sealed class WaveBackground : Grid
     readonly Image _artNext = new() { Stretch = Stretch.UniformToFill, Opacity = 0 };
     readonly List<(UIElement el, TranslateTransform t, double dx, double dy, double secs)> _ribbons = new();
     readonly MediaElement? _video;
+    // Everything blue lives in here so a theme can hue-shift it with one shader; game art and its veil stay outside.
+    readonly Grid _themed = new();
     bool _running;
 
     public WaveBackground()
     {
         Width = UiKit.W; Height = UiKit.H;
         ClipToBounds = true;
-        Background = new LinearGradientBrush
+        Children.Add(_themed);
+        _themed.Background = new LinearGradientBrush
         {
             StartPoint = new Point(0, 0), EndPoint = new Point(1, 1),
             GradientStops =
             {
-                new GradientStop(UiKit.C("#0A2A8E"), 0), new GradientStop(UiKit.C("#1747B4"), 0.45),
-                new GradientStop(UiKit.C("#1E58CC"), 0.75), new GradientStop(UiKit.C("#123A9E"), 1),
+                new GradientStop(UiKit.RawC("#0A2A8E"), 0), new GradientStop(UiKit.RawC("#1747B4"), 0.45),
+                new GradientStop(UiKit.RawC("#1E58CC"), 0.75), new GradientStop(UiKit.RawC("#123A9E"), 1),
             },
         };
-        Children.Add(_waves);
+        _themed.Children.Add(_waves);
         AddRibbon("M-300,820 C 200,560 640,1000 1100,700 S 1900,420 2300,640 L 2300,760 C 1900,560 1500,900 1080,860 S 300,760 -300,960 Z", "#30A8D4FF", 160, 30, 26);
         AddRibbon("M-300,260 C 300,520 820,40 1320,320 S 2000,520 2300,300 L 2300,360 C 1900,600 1500,420 1180,420 S 360,520 -300,360 Z", "#2490C8FF", -140, 40, 34);
         AddRibbon("M-300,640 C 400,380 900,860 1400,520 S 2100,300 2300,420 L 2300,450 C 1900,350 1500,640 1300,640 S 500,500 -300,700 Z", "#3FD8F0FF", 120, -50, 22);
@@ -52,17 +55,17 @@ public sealed class WaveBackground : Grid
             _video.MediaEnded += (_, _) => { _video.Position = TimeSpan.Zero; _video.Play(); };
             _video.MediaFailed += (_, e) => { Log.Warn("background video: " + e.ErrorException?.Message); _video.Visibility = Visibility.Collapsed; _waves.Visibility = Visibility.Visible; };
             _waves.Visibility = Visibility.Collapsed;
-            Children.Add(_video);
+            _themed.Children.Add(_video);
             _video.Play(); _video.Pause(); // shows the first frame even while animation is off
         }
         // Royal-blue grade over the video/ribbons so the home matches the console's colour (user reference: #0A3CC4 -> #0630A8).
-        Children.Add(new Border
+        _themed.Children.Add(new Border
         {
             IsHitTestVisible = false, Opacity = 0.85,
             Background = new LinearGradientBrush
             {
                 StartPoint = new Point(0, 0), EndPoint = new Point(0, 1),
-                GradientStops = { new GradientStop(UiKit.C("#0030C8"), 0), new GradientStop(UiKit.C("#0034B8"), 0.5), new GradientStop(UiKit.C("#0630A8"), 1) },
+                GradientStops = { new GradientStop(UiKit.RawC("#0030C8"), 0), new GradientStop(UiKit.RawC("#0034B8"), 0.5), new GradientStop(UiKit.RawC("#0630A8"), 1) },
             },
         });
         foreach (var img in new[] { _art, _artNext })
@@ -76,7 +79,7 @@ public sealed class WaveBackground : Grid
 
     void AddRibbon(string data, string color, double dx, double dy, double secs)
     {
-        var c = UiKit.C(color);
+        var c = UiKit.RawC(color);
         var path = new Path
         {
             Data = Geometry.Parse(data),
@@ -87,6 +90,12 @@ public sealed class WaveBackground : Grid
         path.RenderTransform = t;
         _waves.Children.Add(path);
         _ribbons.Add((path, t, dx, dy, secs));
+    }
+
+    public void ApplyTheme()
+    {
+        _themed.Effect = Theme.VideoEffect();
+        ((Border)Children[^1]).Background = new LinearGradientBrush(UiKit.C("#B30A2370"), UiKit.C("#660A2370"), 90);
     }
 
     public void SetRunning(bool run)

@@ -77,7 +77,7 @@ public sealed class BootScreen : Screen
         _video = new MediaElement
         {
             Source = new Uri(file), LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Manual,
-            Stretch = Stretch.UniformToFill, Volume = Sound.EffectiveVolume,
+            Stretch = Stretch.UniformToFill, Volume = Sound.EffectiveVolume, Effect = Theme.VideoEffect(),
         };
         _video.MediaFailed += (_, _) => ShowLogin();
         // The video ends on its own welcome screen, so it fades straight into the home screen.

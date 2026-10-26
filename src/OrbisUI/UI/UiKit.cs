@@ -25,7 +25,11 @@ public static class UiKit
     public static readonly Brush Panel = B("#1AFFFFFF");
     public static readonly Brush Line = B("#40FFFFFF");
 
-    public static Color C(string hex) => (Color)ColorConverter.ConvertFromString(hex);
+    /// <summary>A UI colour in the current theme (blue accents are hue-shifted; see <see cref="Theme"/>).</summary>
+    public static Color C(string hex) => Theme.Shift(RawC(hex));
+    /// <summary>A colour exactly as written: for swatches and layers the theme shader already shifts.</summary>
+    public static Color RawC(string hex) => (Color)ColorConverter.ConvertFromString(hex);
+    public static SolidColorBrush Raw(string hex) { var b = new SolidColorBrush(RawC(hex)); b.Freeze(); return b; }
     public static SolidColorBrush B(string hex) { var b = new SolidColorBrush(C(hex)); b.Freeze(); return b; }
 
     public static TextBlock Label(string text, double size, Brush? fg = null, FontFamily? font = null, FontWeight? weight = null)
