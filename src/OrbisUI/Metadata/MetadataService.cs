@@ -351,10 +351,17 @@ public sealed partial class MetadataService
     public static async Task<string?> SteamLibraryArtAsync(Game g, string title, string gridDir, uint appId, CancellationToken ct)
     {
         string? Icon() => Directory.Exists(gridDir) ? Directory.EnumerateFiles(gridDir, $"{appId}_icon.*").FirstOrDefault() : null;
-        var suffixes = new[] { "p", "", "_hero", "_logo", "_icon" };
-        if (Directory.Exists(gridDir) && suffixes.All(sfx => Directory.EnumerateFiles(gridDir, $"{appId}{sfx}.*").Any(f => sfx != "" || Path.GetFileNameWithoutExtension(f) == appId.ToString()))) return Icon();
+        bool Has(string sfx) => Directory.Exists(gridDir) && Directory.EnumerateFiles(gridDir, $"{appId}{sfx}.*").Any(f => sfx != "" || Path.GetFileNameWithoutExtension(f) == appId.ToString());
+        // What SteamGridDB doesn't have, our own art fills: the square cover as both capsules, the background as the hero.
+        string? Done()
+        {
+            foreach (var (src, sfx) in new[] { (g.Art, "p"), (g.Art, ""), (g.Background, "_hero") })
+                if (src != null && File.Exists(src) && !Has(sfx)) { Directory.CreateDirectory(gridDir); File.Copy(src, Path.Combine(gridDir, $"{appId}{sfx}{Path.GetExtension(src)}")); }
+            return Icon();
+        }
+        if (new[] { "p", "", "_hero", "_logo", "_icon" }.All(Has)) return Icon();
         var key = Secrets.Get(Secrets.SteamGridDb);
-        if (key == null) return Icon();
+        if (key == null) return Done();
         HttpRequestMessage Req(string path)
         {
             var r = new HttpRequestMessage(HttpMethod.Get, "https://www.steamgriddb.com/api/v2/" + path);
@@ -365,7 +372,7 @@ public sealed partial class MetadataService
         string? id;
         using (var d = await GetJson(Req("search/autocomplete/" + Uri.EscapeDataString(term)), ct))
         {
-            if (d == null || !d.RootElement.TryGetProperty("data", out var arr) || arr.GetArrayLength() == 0) return Icon();
+            if (d == null || !d.RootElement.TryGetProperty("data", out var arr) || arr.GetArrayLength() == 0) return Done();
             var best = arr.EnumerateArray().FirstOrDefault(e => TitlesMatch(e.GetProperty("name").GetString() ?? "", term));
             id = (best.ValueKind == JsonValueKind.Undefined ? arr[0] : best).GetProperty("id").GetRawText();
         }
@@ -379,14 +386,14 @@ public sealed partial class MetadataService
             ($"icons/game/{id}?types=static&nsfw=false&humor=false", "_icon"),
         })
         {
-            if (Directory.EnumerateFiles(gridDir, $"{appId}{suffix}.*").Any(f => suffix != "" || Path.GetFileNameWithoutExtension(f) == appId.ToString())) continue;
+            if (Has(suffix)) continue;
             using var d = await GetJson(Req(query), ct);
             if (FirstUrl(d) is not string url || await GetBytes(url, ct) is not byte[] img) continue;
             var ext = Path.GetExtension(new Uri(url).AbsolutePath).ToLowerInvariant() switch { ".jpg" or ".jpeg" => ".jpg", ".ico" => ".ico", _ => ".png" };
             AtomicFile.WriteAllBytes(Path.Combine(gridDir, $"{appId}{suffix}{ext}"), img);
         }
         Log.Info($"Steam library art for {title} from SteamGridDB");
-        return Icon();
+        return Done();
     }
 
     /// <summary>Stand-in game so app art can use the SteamGridDB search.</summary>

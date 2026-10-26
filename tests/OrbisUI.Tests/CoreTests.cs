@@ -285,4 +285,17 @@ public class CoreTests
         Assert.Equal(3, GameProgress.GradeFromPoints(5));
         Assert.Equal(GameProgress.Normalize("Shadow Hearts"), GameProgress.Normalize("shadow-hearts!"));
     }
+
+    [Fact]
+    public async Task SteamLibraryArt_FallsBackToOwnArt_WithoutSteamGridDb()
+    {
+        var dir = Path.Combine(AppPaths.Root, "grid-" + Guid.NewGuid().ToString("N"));
+        var art = Path.Combine(AppPaths.Root, "cover.png");
+        File.WriteAllBytes(art, new byte[] { 1, 2, 3 });
+        var g = new Game { Id = "t:1", Title = "Test", Art = art };
+        await MetadataService.SteamLibraryArtAsync(g, "Test", dir, 123u, CancellationToken.None);
+        Assert.True(File.Exists(Path.Combine(dir, "123p.png")));
+        Assert.True(File.Exists(Path.Combine(dir, "123.png")));
+        Assert.False(File.Exists(Path.Combine(dir, "123_hero.png")));
+    }
 }
