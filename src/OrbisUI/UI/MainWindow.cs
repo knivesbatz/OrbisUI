@@ -309,6 +309,7 @@ public sealed class MainWindow : Window
         if (hwnd != IntPtr.Zero) SendGameToFront();
         else Log.Warn($"No window detected for {g.Title}; leaving the launcher visible");
         _ = LosslessScaling.ActivateAsync(g, hwnd, () => Shell.Launcher.Running?.Id == g.Id);
+        if (hwnd != IntPtr.Zero) Task.Run(() => { if (ReShade.IsLoaded(hwnd)) { Log.Info($"ReShade is loaded in {g.Title}"); Dispatcher.BeginInvoke(() => GameToast.Show("HDR On", "", "\uE706")); } });
     }
 
     void SendGameToFront()

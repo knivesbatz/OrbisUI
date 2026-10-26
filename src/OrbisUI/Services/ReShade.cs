@@ -221,6 +221,18 @@ public static class ReShade
         return done;
     }
 
+    /// <summary>True when ReShade is loaded in the process that owns the window, under any DLL name (dxgi, d3d11, the Vulkan layer).</summary>
+    public static bool IsLoaded(IntPtr hwnd)
+    {
+        Native.GetWindowThreadProcessId(hwnd, out uint pid);
+        try
+        {
+            using var p = System.Diagnostics.Process.GetProcessById((int)pid);
+            return p.Modules.Cast<System.Diagnostics.ProcessModule>().Any(m => m.FileVersionInfo.ProductName?.Contains("ReShade", StringComparison.OrdinalIgnoreCase) == true);
+        }
+        catch { return false; } // elevated or already exited
+    }
+
     /// <summary>Called right before launch. Never throws: a ReShade problem must not stop the game.</summary>
     public static void ApplyFor(Game g)
     {

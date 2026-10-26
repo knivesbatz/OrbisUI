@@ -219,7 +219,6 @@ public static class SettingsScreens
             },
         }).ToList();
         items.Add(new ListItem { Glyph = "\uE72C", Label = "Scan Again", Activate = () => { Shell.Toast("Wi-Fi", "Scanning for networks", ""); Scan(); } });
-        items.Add(new ListItem { Glyph = "\uE713", Label = "Windows Wi-Fi Settings", Activate = () => WinSettings("ms-settings:network-wifi") });
         return new ListScreen("Wi-Fi", items, subtitle: scanned ? $"{nets.Count} networks" : "Scanning…") { Tag = "wifi" };
     }
 

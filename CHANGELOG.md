@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.7 (unreleased)
+- Wi-Fi: the "Windows Wi-Fi Settings" entry is gone; everything is done in OrbisUI.
+- When ReShade is running in a game, OrbisUI shows an "HDR On" notice over the game.
+
 ## 0.4.6 (2026-10-26)
 - Wi-Fi: opening it starts a real scan, so every nearby network shows up (not only the cached one), each with signal bars, its strength and whether it is open or secured. Pick one to connect (the on-screen keyboard asks for the password) or the current one to disconnect.
 - Settings > Themes: the console's colour grid (Royal Blue, Gold, Dark Blue, Red, Teal, Purple, Pink, Gray). The theme tints the boot video as it plays, the home background and every blue accent; Royal Blue stays the default and costs nothing extra.
