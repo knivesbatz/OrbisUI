@@ -86,6 +86,8 @@ internal static partial class Native
             if (!pids.Contains((int)pid)) return true;
             GetWindowRect(h, out var r);
             if (r.Right - r.Left < 200 || r.Bottom - r.Top < 150) return true;
+            // Vita3K's library window ("Vita3K v0.2.1 ...") opens before and behind the game; focusing it covers and closes the game.
+            if (WindowTitle(h).StartsWith("Vita3K v", StringComparison.Ordinal)) return true;
             found = h;
             return false;
         }, IntPtr.Zero);
