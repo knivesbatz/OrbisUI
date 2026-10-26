@@ -433,18 +433,18 @@ public sealed class MainWindow : Window
         var art = new Grid { Width = 420, Height = 420 };
         art.Children.Add(_splashFallback);
         art.Children.Add(_splashArt);
+        art.Visibility = Visibility.Collapsed; // user rule: the splash is only the blurred image and a spinner, no cover or text
         sp.Children.Add(art);
         _splashTitle.HorizontalAlignment = HorizontalAlignment.Center; _splashTitle.Margin = new Thickness(0, 34, 0, 8); _splashTitle.MaxWidth = 1400;
-        sp.Children.Add(_splashTitle);
         var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 10, 0, 0) };
         row.Children.Add(_spinner);
         _splashStatus.Margin = new Thickness(18, 0, 0, 0); _splashStatus.VerticalAlignment = VerticalAlignment.Center;
-        row.Children.Add(_splashStatus);
         sp.Children.Add(row);
         _splash.Children.Add(_splashBg);
         _splash.Children.Add(sp);
         var hint = UiKit.Hints((Btn.Circle, "Stop Waiting"));
         hint.VerticalAlignment = VerticalAlignment.Bottom; hint.HorizontalAlignment = HorizontalAlignment.Right; hint.Margin = new Thickness(0, 0, 60, 40);
+        hint.Visibility = Visibility.Collapsed; // no text on the splash; Circle still stops waiting
         _splash.Children.Add(hint);
         _overlay.Children.Add(_splash);
     }
@@ -459,6 +459,7 @@ public sealed class MainWindow : Window
         Background_.SetArt(g.BgSource == "SteamGridDB" ? g.Background : null);
         // The SteamGridDB hero, blurred, fills the screen behind the cover, title and spinner.
         _splashSrc = g.BgSource == "SteamGridDB" ? Metadata.ImageTools.LoadForDisplay(g.Background, 1920) : null;
+        _splashSrc ??= Metadata.ImageTools.LoadForDisplay(g.Art, 1920); // no hero: the cover, blurred, fills the screen instead
         _splashBg.Children.Clear();
         if (_splashSrc != null) _splashBg.Children.Add(SplashArt(_splashSrc));
         _splash.Visibility = Visibility.Visible;
@@ -489,7 +490,6 @@ public sealed class MainWindow : Window
             Left = 0, Top = 0, Width = SystemParameters.PrimaryScreenWidth, Height = SystemParameters.PrimaryScreenHeight,
         };
         var content = _splashSrc != null ? SplashArt(_splashSrc) : new Grid();
-        content.Children.Add(new Image { Source = _splashArt.Source, Width = 420, Height = 420 });
         w.Content = content;
         w.Show();
         var started = DateTime.UtcNow;
