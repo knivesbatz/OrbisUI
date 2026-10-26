@@ -217,12 +217,18 @@ public sealed class LaunchService
         await Task.Delay(1500, ct);
         Ready?.Invoke(g, GameWindow);
 
-        // Steam keeps RunningAppID set until the game exits; every 2 s is plenty.
+        // Steam keeps RunningAppID set until the game exits; every 2 s is plenty. Shortcuts are followed by process, and
+        // some emulators (Vita3K) restart themselves right after starting, so early on a gap of up to 16 s isn't an exit.
+        var readyAt = DateTime.UtcNow;
+        int gone = 0;
         while (!ct.IsCancellationRequested)
         {
             await Task.Delay(2000, ct);
-            bool still = isShortcut ? Pids(null, dir).Count > 0 : SteamRunningAppId() == g.SteamAppId;
-            if (!still) break;
+            var ids = isShortcut ? Pids(null, dir) : null;
+            bool still = ids != null ? ids.Count > 0 : SteamRunningAppId() == g.SteamAppId;
+            gone = still ? 0 : gone + 1;
+            if (gone >= (isShortcut && DateTime.UtcNow - readyAt < TimeSpan.FromSeconds(45) ? 8 : 1)) break;
+            if (ids is { Count: > 0 } && Native.FindMainWindow(ids) is var w && w != IntPtr.Zero && w != GameWindow) GameWindow = w;
         }
         Finish(g);
     }
