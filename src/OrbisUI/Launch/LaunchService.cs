@@ -73,7 +73,8 @@ public sealed class LaunchService
         ReShade.ApplyFor(g);
         // Through the game's Steam shortcut the Steam overlay hooks in. A first launch adds the shortcut (Steam restarts once);
         // another disc than the one in the shortcut, or a failed sync, starts it directly.
-        if (AppSettings.Current.AddGamesToSteam && (disc == null || disc == g.Path) && Steam.FindInstall() != null)
+        // Vita3K started by Steam exits at once with "Failed to initialise config" (same exe, args and folder work directly).
+        if (AppSettings.Current.AddGamesToSteam && g.Platform != "VITA" && (disc == null || disc == g.Path) && Steam.FindInstall() != null)
         {
             if (SteamShortcuts.RunId(g) == null)
             {
