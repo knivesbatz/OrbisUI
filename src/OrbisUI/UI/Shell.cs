@@ -85,7 +85,7 @@ public static class Shell
 
     public static T? Find<T>() where T : Screen => Stack.OfType<T>().FirstOrDefault();
 
-    public static void Toast(string title, string body = "", string glyph = "") => Services.Notifications.Post(title, body, glyph);
+    public static void Toast(string title, string body = "", string glyph = "", bool download = false) => Services.Notifications.Post(title, body, glyph, download);
 
     /// <summary>Yes/No confirmation in the console's dialog style.</summary>
     public static void Confirm(string title, string message, Action yes, string yesText = "Yes", string noText = "No")

@@ -10,11 +10,9 @@ public static class TrophiesScreen
     public static void Open()
     {
         if (!RetroAchievements.Configured) { HomeScreen.SteamHandoff(Steam.Links.Achievements, "Trophies"); return; }
-        Shell.Toast("Trophies", "Loading your RetroAchievements…", "");
-        _ = Task.Run(async () =>
+        WaitScreen.Run(RetroAchievements.LoadAsync, r =>
         {
-            var (points, recent) = await RetroAchievements.LoadAsync();
-            Shell.Window.Dispatcher.Invoke(() =>
+            var (points, recent) = r;
             {
                 var items = recent.Select(t => new ListItem
                 {
@@ -25,7 +23,7 @@ public static class TrophiesScreen
                 items.Add(new ListItem { Glyph = "", Label = "Steam Achievements", Sub = () => "Opens in Steam", Activate = () => HomeScreen.SteamHandoff(Steam.Links.Achievements, "Trophies") });
                 Shell.Push(new ListScreen("Trophies", items, subtitle: $"RetroAchievements  ·  {points:N0} points  ·  {recent.Count} earned in the last 90 days",
                     hints: new[] { (Btn.Circle, "Back") }));
-            });
+            }
         });
     }
     static readonly string[] Grades = { "Platinum", "Gold", "Silver", "Bronze" };

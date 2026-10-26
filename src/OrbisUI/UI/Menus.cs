@@ -197,18 +197,22 @@ public static class GameMenu
 
 public sealed class NotificationsScreen : ListScreen
 {
-    public NotificationsScreen() : base("Notifications", Items()) => Notifications.MarkRead();
+    public NotificationsScreen(bool downloads = false) : base(downloads ? "Downloads" : "Notifications", Items(downloads)) => Notifications.MarkRead();
 
-    static IEnumerable<ListItem> Items()
+    // Like the console: a Downloads category row (installs and updates) first, then every other notification.
+    static IEnumerable<ListItem> Items(bool downloads)
     {
-        if (Notifications.Items.Count == 0)
-            return new[] { new ListItem { Glyph = "", Label = "There are no notifications." } };
-        return Notifications.Items.Select(n => new ListItem
+        var list = Notifications.Items.Where(n => n.Download == downloads).Select(n => new ListItem
         {
             Glyph = n.Glyph, Label = n.Title,
             Sub = () => string.IsNullOrEmpty(n.Body) ? null : n.Body,
             Value = () => Ago(n.When),
-        });
+        }).ToList();
+        if (list.Count == 0) list.Add(new ListItem { Glyph = "\uEA8F", Label = downloads ? "There are no downloads." : "There are no notifications." });
+        if (downloads) return list;
+        var last = Notifications.Items.FirstOrDefault(n => n.Download);
+        list.Insert(0, new ListItem { Glyph = "\uE896", Label = "Downloads", Sub = () => last == null ? null : $"{last.Title}  ·  {last.Body}", Activate = () => Shell.Push(new NotificationsScreen(true)) });
+        return list;
     }
 
     static string Ago(DateTime t)

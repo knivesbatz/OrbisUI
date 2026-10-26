@@ -121,7 +121,7 @@ public sealed class MainWindow : Window
             updTimer.Interval = TimeSpan.FromHours(Math.Max(1, AppSettings.Current.UpdateCheckHours));
             if (!AppSettings.Current.AutoCheckUpdates || Shell.Launcher.Running != null) return;
             var u = await Updater.CheckAsync();
-            if (u != null) Notifications.Post("System software update available", $"Version {u.Tag}. Install it from Settings > System Software Update.", "");
+            if (u != null) Notifications.Post("System software update available", $"Version {u.Tag}. Install it from Settings > System Software Update.", "", download: true);
         };
         updTimer.Start();
         if (Environment.GetEnvironmentVariable("ORBISUI_SCRIPT") is { Length: > 0 } script) RunScript(script);

@@ -165,7 +165,7 @@ public static class FileManager
 
     static void Install(string pkg)
     {
-        Shell.Toast("Installing", Path.GetFileName(pkg), "");
+        Shell.Toast("Installing", Path.GetFileName(pkg), "", download: true);
         Task.Run(() =>
         {
             try
@@ -173,7 +173,7 @@ public static class FileManager
                 var (kind, dest) = PkgInstaller.Install(pkg);
                 Shell.Window.Dispatcher.Invoke(async () =>
                 {
-                    Shell.Toast(kind switch { PkgInstaller.Kind.Update => "Update installed", PkgInstaller.Kind.Dlc => "Add-on installed", _ => "Game installed" }, Path.GetFileName(dest), "");
+                    Shell.Toast(kind switch { PkgInstaller.Kind.Update => "Update installed", PkgInstaller.Kind.Dlc => "Add-on installed", _ => "Game installed" }, Path.GetFileName(dest), "", download: true);
                     await Shell.Library.RescanAsync();
                 });
             }

@@ -90,15 +90,15 @@ public sealed class HomeScreen : Screen
 
         _fns = new()
         {
-            new("PlayStation Store", "îœ™", () => SteamHandoff(Steam.Links.Store, "Store")),
-            new("Notifications", "îª", () => Shell.Push(new NotificationsScreen())),
-            new("Messages", "î¢½", () => FriendsScreen.Open(true)),
-            new("Friends", "îœ–", () => FriendsScreen.Open(false)),
-            new("Profile", "î»", () => SteamHandoff(Steam.Links.Profile, "Profile")),
+            new("PlayStation Store", "", () => SteamHandoff(Steam.Links.Store, "Store")),
+            new("Notifications", "", () => Shell.Push(new NotificationsScreen())),
+            new("Messages", "", () => FriendsScreen.Open(true)),
+            new("Friends", "", () => FriendsScreen.Open(false)),
+            new("Profile", "", () => SteamHandoff(Steam.Links.Profile, "Profile")),
             new("Trophies", "", TrophiesScreen.Open,
                 Geometry.Parse("M14,4 H42 V14 C42,26 34,32 28,33 C22,32 14,26 14,14 Z M14,8 H6 C6,18 10,22 15,22 M42,8 H50 C50,18 46,22 41,22 M28,33 V42 M18,50 H38 L36,42 H20 Z")),
-            new("Settings", "îœ“", () => Shell.Push(SettingsScreens.Root())),
-            new("Power", "îŸ¨", PowerMenu.Show),
+            new("Settings", "", () => Shell.Push(SettingsScreens.Root())),
+            new("Power", "", PowerMenu.Show),
         };
         BuildFunctionArea();
 
@@ -237,8 +237,8 @@ public sealed class HomeScreen : Screen
         list.AddRange(Shell.Library.Visible.Select(g => new HomeItem { Kind = HomeKind.Game, Game = g, Title = LibraryService.DisplayTitle(g) }));
         list.Add(new HomeItem { Kind = HomeKind.Browser, Title = "Internet Browser", Glyph = "\uE774", IconKey = "browsertile" });
         foreach (var f in AppSettings.Current.Folders)
-            list.Add(new HomeItem { Kind = HomeKind.Folder, Folder = f, Title = f.Name, Glyph = "îŸ´", IconKey = "tv" });
-        list.Add(new HomeItem { Kind = HomeKind.Library, Title = "Library", Glyph = "î£±", IconKey = "library" });
+            list.Add(new HomeItem { Kind = HomeKind.Folder, Folder = f, Title = f.Name, Glyph = "", IconKey = "tv" });
+        list.Add(new HomeItem { Kind = HomeKind.Library, Title = "Library", Glyph = "", IconKey = "library" });
         _items = list;
         int idx = keepId == null ? -1 : _items.FindIndex(i => i.Id == keepId);
         if (idx < 0) idx = Math.Max(0, _items.FindIndex(i => i.Kind == HomeKind.Game));
@@ -319,7 +319,7 @@ public sealed class HomeScreen : Screen
         {
             var parts = new List<string>();
             if (!string.IsNullOrEmpty(g.Publisher)) parts.Add(g.Publisher!);
-            _sub.Text = string.Join("   Â·   ", parts.Where(p => p.Length > 0));
+            _sub.Text = string.Join("   ·   ", parts.Where(p => p.Length > 0));
         }
         else
         {
@@ -581,6 +581,45 @@ public sealed class HomeScreen : Screen
         }
         _fnLabel.Text = _fns[_fnSel].Name;
         Canvas.SetLeft(_fnLabel, FnX(_fnSel) - 200);
+        UpdateFnPreview();
+    }
+
+    readonly Canvas _fnPreview = new();
+    int _previewToken;
+
+    // Trophies in the function row previews what you've earned, like the console (menu tour 4:36): grade totals over the
+    // library, four games' progress loading at a time (each is cached for later).
+    async void UpdateFnPreview()
+    {
+        if (_fnPreview.Parent == null) _fnLayer.Children.Add(_fnPreview);
+        _fnPreview.Children.Clear();
+        int token = ++_previewToken;
+        if (!_fnMode || _fns[_fnSel].Name != "Trophies") return;
+        var gate = new SemaphoreSlim(4);
+        var all = await Task.WhenAll(Shell.Library.Visible.Where(GameProgress.Supported).Select(async g =>
+        {
+            await gate.WaitAsync();
+            try { return token == _previewToken ? await GameProgress.LoadAsync(g) : null; }
+            catch { return null; }
+            finally { gate.Release(); }
+        }));
+        if (token != _previewToken) return;
+        var earned = new int[4];
+        foreach (var p in all.OfType<GameProgress.Progress>()) for (int i = 0; i < 4; i++) earned[i] += p.Earned[i];
+        if (earned.Sum() == 0) return;
+        void Put(UIElement el, double x, double y) { Canvas.SetLeft(el, x); Canvas.SetTop(el, y); _fnPreview.Children.Add(el); }
+        // Positions from the tour frame at 960x540, doubled.
+        Put(UiKit.Label("Trophies You Earned", 30), 190, 112);
+        var total = new StackPanel { Width = 220 };
+        foreach (var (t, size) in new[] { ("Total", 32.0), (earned.Sum().ToString("N0"), 58.0) })
+            total.Children.Add(new TextBlock { Text = t, FontSize = size, FontFamily = UiKit.Font, Foreground = UiKit.Text, TextAlignment = TextAlignment.Center });
+        Put(total, 706, 332);
+        for (int i = 0; i < 4; i++)
+        {
+            Put(GradeIcon(i, 66), 942 + i * 132, 352);
+            Put(UiKit.Label(earned[i].ToString("N0"), 24), 1012 + i * 132, 396);
+        }
+        UiKit.FadeIn(_fnPreview, 200);
     }
     public override bool OnInput(Btn b)
     {

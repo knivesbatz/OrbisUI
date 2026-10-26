@@ -86,6 +86,8 @@ public sealed class BootScreen : Screen
         Loaded += (_, _) => _video.Play();
     }
 
+    // "Who is using this controller?" from the menu tour (0:20), measured at 960x540 and doubled: wordmark top-left,
+    // two lines of text at x 600, then user tiles (square picture over a name band) from x 540.
     void BuildLogin()
     {
         var steam = Steam.FindInstall();
@@ -96,23 +98,32 @@ public sealed class BootScreen : Screen
             name = persona ?? name;
             if (id != null) avatar = Metadata.ImageTools.LoadForDisplay(System.IO.Path.Combine(steam, "config", "avatarcache", id + ".png"), 256);
         }
-        var sp = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        var prompt = UiKit.Label("Press the PS button to use the controller.", 36);
-        prompt.HorizontalAlignment = HorizontalAlignment.Center;
-        prompt.Margin = new Thickness(0, 0, 0, 70);
-        sp.Children.Add(prompt);
-        var tile = new Grid { Width = 260, Height = 260, Background = UiKit.Panel };
-        if (avatar != null) tile.Children.Add(new Image { Source = avatar, Stretch = Stretch.UniformToFill });
-        else { var g = UiKit.Glyph("", 120); g.HorizontalAlignment = HorizontalAlignment.Center; tile.Children.Add(g); }
-        var frame = UiKit.FocusFrame(3); frame.Margin = new Thickness(-4);
-        tile.Children.Add(frame);
-        sp.Children.Add(tile);
-        var n = UiKit.Label(name, 34);
-        n.HorizontalAlignment = HorizontalAlignment.Center; n.Margin = new Thickness(0, 22, 0, 0);
-        sp.Children.Add(n);
-        _login.Children.Add(sp);
-        var hint = UiKit.Hints((Btn.PS, "Log In"), (Btn.Cross, "Log In"));
-        hint.HorizontalAlignment = HorizontalAlignment.Center; hint.VerticalAlignment = VerticalAlignment.Bottom; hint.Margin = new Thickness(0, 0, 0, 60);
+        var c = new Canvas();
+        void Put(UIElement el, double x, double y) { Canvas.SetLeft(el, x); Canvas.SetTop(el, y); c.Children.Add(el); }
+        Put(new TextBlock { Text = "ORBIS", FontFamily = UiKit.Font, FontSize = 92, Foreground = UiKit.Text }, 112, 52);
+        var pad = Shell.Pad?.PadName;
+        var line1 = new StackPanel { Orientation = Orientation.Horizontal };
+        if (pad != null) { var g = UiKit.Glyph("\uE7FC", 30); g.Margin = new Thickness(0, 0, 14, 0); line1.Children.Add(g); }
+        line1.Children.Add(UiKit.Label(pad != null ? pad + " wireless controller connected." : "Press the PS button to use the controller.", 32));
+        Put(line1, 600, 240);
+        Put(UiKit.Label("Who is using this controller?", 32), 600, 290);
+        var tile = new Grid { Width = 266, Height = 384, Background = UiKit.B("#E02358C8") };
+        tile.RowDefinitions.Add(new RowDefinition { Height = new GridLength(266) });
+        tile.RowDefinitions.Add(new RowDefinition());
+        var pic = new Grid { Background = UiKit.Panel };
+        if (avatar != null) pic.Children.Add(new Image { Source = avatar, Stretch = Stretch.UniformToFill });
+        else { var g = UiKit.Glyph("\uE77B", 120); g.HorizontalAlignment = HorizontalAlignment.Center; pic.Children.Add(g); }
+        tile.Children.Add(pic);
+        var n = UiKit.Label(name, 30, null, UiKit.FontRegular);
+        n.Margin = new Thickness(22, 20, 12, 0); Grid.SetRow(n, 1);
+        tile.Children.Add(n);
+        tile.Children.Add(new Border { BorderBrush = Brushes.White, BorderThickness = new Thickness(3), Margin = new Thickness(-3), IsHitTestVisible = false });
+        Grid.SetRowSpan(tile.Children[^1], 2);
+        Put(tile, 540, 428);
+        _login.Children.Add(c);
+        _login.Children.Add(new Border { Height = 1, Background = UiKit.Line, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 135) });
+        var hint = UiKit.Hints((Btn.Cross, "Enter"), (Btn.PS, "Log In"));
+        hint.HorizontalAlignment = HorizontalAlignment.Left; hint.VerticalAlignment = VerticalAlignment.Bottom; hint.Margin = new Thickness(105, 0, 0, 82);
         _login.Children.Add(hint);
     }
 
