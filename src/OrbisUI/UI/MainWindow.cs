@@ -33,7 +33,17 @@ public sealed class MainWindow : Window
     readonly Grid _splashFallback = new() { Width = 420, Height = 420 };
     readonly TextBlock _splashTitle = UiKit.Label("", 44);
     readonly TextBlock _splashStatus = UiKit.Label("", 26, UiKit.Dim);
-    readonly Image _splashBg = new() { Stretch = Stretch.UniformToFill };
+    readonly Grid _splashBg = new();
+    ImageSource? _splashSrc;
+
+    /// <summary>The whole hero image, never cropped (wide heroes lost their subject when filled), over a blurred, darkened fill of itself.</summary>
+    static Grid SplashArt(ImageSource src)
+    {
+        var g = new Grid { Background = Brushes.Black, ClipToBounds = true };
+        g.Children.Add(new Image { Source = src, Stretch = Stretch.UniformToFill, Opacity = 0.45, Effect = new System.Windows.Media.Effects.BlurEffect { Radius = 60 } });
+        g.Children.Add(new Image { Source = src, Stretch = Stretch.Uniform });
+        return g;
+    }
     readonly Path _spinner = new() { Width = 46, Height = 46, Stroke = UiKit.Focus, StrokeThickness = 4, Data = Geometry.Parse("M23,2 A21,21 0 1 1 2,23"), RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new RotateTransform() };
 
     // Toast
@@ -163,6 +173,7 @@ public sealed class MainWindow : Window
                 if (raw == "browser" || raw.StartsWith("browser:")) { Shell.Push(raw.Length > 8 ? new BrowserScreen(raw[8..]) : new BrowserScreen()); continue; }
                 if (raw == "settings") { Shell.Push(SettingsScreens.Root()); continue; }
                 if (raw == "trophies") { TrophiesScreen.Open(); continue; }
+                if (raw.StartsWith("splash:")) { ShowSplash(Shell.Library.Games.First(g => g.Title.Contains(raw[7..], StringComparison.OrdinalIgnoreCase))); continue; }
                 if (raw == "library") { Shell.Push(new LibraryScreen()); continue; }
                 if (raw == "friends") { FriendsScreen.Open(false); continue; }
                 if (raw.StartsWith("launch:")) { StartGame(Shell.Library.Games.First(g => g.Title.Contains(raw[7..], StringComparison.OrdinalIgnoreCase))); continue; }
@@ -293,7 +304,7 @@ public sealed class MainWindow : Window
 
     void OnGameReady(Game g, IntPtr hwnd)
     {
-        if (hwnd != IntPtr.Zero && _splash.Visibility == Visibility.Visible && _splashBg.Source != null) HoldSplashUntilFocused(hwnd);
+        if (hwnd != IntPtr.Zero && _splash.Visibility == Visibility.Visible && _splashSrc != null) HoldSplashUntilFocused(hwnd);
         HideSplash();
         if (hwnd != IntPtr.Zero) SendGameToFront();
         else Log.Warn($"No window detected for {g.Title}; leaving the launcher visible");
@@ -419,9 +430,10 @@ public sealed class MainWindow : Window
         if (_splashArt.Source == null) _splashFallback.Children.Add(Tiles.Make(new HomeItem { Kind = HomeKind.Game, Game = g, Title = g.Title }, 420));
         Background_.SetArt(g.BgSource == "SteamGridDB" ? g.Background : null);
         // The SteamGridDB background is the whole splash; without one, the cover, title and spinner stay.
-        _splashBg.Source = g.BgSource == "SteamGridDB" ? Metadata.ImageTools.LoadForDisplay(g.Background, 1920) : null;
-        _splashBg.Visibility = _splashBg.Source != null ? Visibility.Visible : Visibility.Collapsed;
-        ((StackPanel)_splash.Children[1]).Visibility = _splashBg.Source != null ? Visibility.Collapsed : Visibility.Visible;
+        _splashSrc = g.BgSource == "SteamGridDB" ? Metadata.ImageTools.LoadForDisplay(g.Background, 1920) : null;
+        _splashBg.Children.Clear();
+        if (_splashSrc != null) _splashBg.Children.Add(SplashArt(_splashSrc));
+        ((StackPanel)_splash.Children[1]).Visibility = _splashSrc != null ? Visibility.Collapsed : Visibility.Visible;
         _splash.Visibility = Visibility.Visible;
         _splash.Opacity = 0;
         SyncMusic();
@@ -447,7 +459,7 @@ public sealed class MainWindow : Window
             WindowStyle = WindowStyle.None, AllowsTransparency = true, ResizeMode = ResizeMode.NoResize, ShowInTaskbar = false,
             Topmost = true, ShowActivated = false, Focusable = false, IsHitTestVisible = false, Background = Brushes.Black,
             Left = 0, Top = 0, Width = SystemParameters.PrimaryScreenWidth, Height = SystemParameters.PrimaryScreenHeight,
-            Content = new Image { Source = _splashBg.Source, Stretch = Stretch.UniformToFill },
+            Content = SplashArt(_splashSrc!),
         };
         w.Show();
         var started = DateTime.UtcNow;

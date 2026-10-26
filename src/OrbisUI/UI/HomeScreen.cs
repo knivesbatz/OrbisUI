@@ -27,7 +27,6 @@ public sealed class HomeScreen : Screen
     readonly Dictionary<int, (FrameworkElement el, TranslateTransform t, ScaleTransform s)> _tiles = new();
     readonly TextBlock _title = UiKit.Label("", 54);
     readonly TextBlock _sub = UiKit.Label("", 24, UiKit.Dim);
-    readonly TextBlock _desc = new() { FontSize = 22, Foreground = UiKit.Dim, FontFamily = UiKit.Font, TextWrapping = TextWrapping.Wrap, MaxHeight = 92, TextTrimming = TextTrimming.WordEllipsis, Width = 980 };
     readonly Border _startBar = new();
     readonly StackPanel _titleBlock = new();
     readonly TextBlock _startText = UiKit.Label("Start", 26);
@@ -83,8 +82,6 @@ public sealed class HomeScreen : Screen
         _title.MaxWidth = 1100;
         titleBlock.Children.Add(_title);
         titleBlock.Children.Add(_sub);
-        _desc.Margin = new Thickness(0, 14, 0, 0);
-        titleBlock.Children.Add(_desc);
         Canvas.SetTop(titleBlock, RowY + Big + StartH - 72); // the title's baseline sits on the Start bar
         Canvas.SetLeft(titleBlock, 0);
         _row.Children.Add(titleBlock);
@@ -321,10 +318,8 @@ public sealed class HomeScreen : Screen
         if (it.Game is Game g)
         {
             var parts = new List<string>();
-            if (!string.IsNullOrEmpty(g.Year)) parts.Add(g.Year!);
             if (!string.IsNullOrEmpty(g.Publisher)) parts.Add(g.Publisher!);
             _sub.Text = string.Join("   Â·   ", parts.Where(p => p.Length > 0));
-            _desc.Text = g.Description ?? "";
         }
         else
         {
@@ -336,7 +331,6 @@ public sealed class HomeScreen : Screen
                 HomeKind.WhatsNew => "",
                 _ => "",
             };
-            _desc.Text = "";
         }
         AppSettings.Current.LastSelectedId = it.Id;
         BuildSubRow();
@@ -354,7 +348,6 @@ public sealed class HomeScreen : Screen
     {
         if (_cards.Parent == null) { Canvas.SetLeft(_cards, CardsX); Canvas.SetTop(_cards, CardsY); _row.Children.Add(_cards); }
         _cards.Children.Clear();
-        _desc.Visibility = Visibility.Visible;
         _progressTimer?.Stop();
         if (_items.Count == 0 || _items[_sel].Game is not Game g || !GameProgress.Supported(g)) return;
         if (GameProgress.TryCached(g, out var cached)) { ShowProgress(cached); return; }
@@ -382,8 +375,6 @@ public sealed class HomeScreen : Screen
     void ShowProgress(GameProgress.Progress? p)
     {
         _cards.Children.Clear();
-        // The console shows no description under the title; it makes room for the cards when they appear.
-        _desc.Visibility = p == null ? Visibility.Visible : Visibility.Collapsed;
         if (p == null) return;
         if (!_fnMode && _subSel < 0) UiKit.FadeIn(_cards, 250);
         void Put(UIElement el, double x, double y) { Canvas.SetLeft(el, x); Canvas.SetTop(el, y); _cards.Children.Add(el); }
