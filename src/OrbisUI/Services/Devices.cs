@@ -8,7 +8,7 @@ namespace OrbisUI.Services;
 
 /// <summary>
 /// Native Wi-Fi (through netsh, so no extra permissions) and audio output switching (Core Audio + the policy-config
-/// interface Windows' own sound settings use). Bluetooth pairing stays in Windows Settings.
+/// interface Windows' own sound settings use), plus the default microphone's mute and level. Bluetooth is in Bluetooth.cs.
 /// </summary>
 public static class Devices
 {
@@ -103,16 +103,17 @@ public static class Devices
     // ---------------- Audio output ----------------
     public sealed record AudioDevice(string Id, string Name, bool IsDefault);
 
-    public static List<AudioDevice> AudioOutputs()
+    /// <param name="flow">0 = outputs (render), 1 = microphones (capture).</param>
+    public static List<AudioDevice> AudioOutputs(int flow = 0)
     {
         var list = new List<AudioDevice>();
         var en = (IMMDeviceEnumerator)new MMDeviceEnumerator();
         try
         {
-            en.GetDefaultAudioEndpoint(0, 1, out var def);
+            en.GetDefaultAudioEndpoint(flow, 1, out var def);
             def.GetId(out var defId);
             Marshal.ReleaseComObject(def);
-            en.EnumAudioEndpoints(0, 1 /*active*/, out var col);
+            en.EnumAudioEndpoints(flow, 1 /*active*/, out var col);
             col.GetCount(out var n);
             for (int i = 0; i < n; i++)
             {
@@ -139,6 +140,63 @@ public static class Devices
         try { for (int role = 0; role < 3; role++) Marshal.ThrowExceptionForHR(pc.SetDefaultEndpoint(id, role)); }
         finally { Marshal.ReleaseComObject(pc); }
         Log.Info("Audio output set to " + id);
+    }
+
+    /// <summary>The default microphone's mute state and level (0..1); null when there is no microphone.</summary>
+    public static (bool Muted, float Level)? MicState()
+    {
+        var v = MicVolume();
+        if (v == null) return null;
+        try { v.GetMute(out var m); v.GetMasterVolumeLevelScalar(out var l); return (m, l); }
+        finally { Marshal.ReleaseComObject(v); }
+    }
+
+    public static void SetMic(bool? mute = null, float? level = null)
+    {
+        var v = MicVolume();
+        if (v == null) return;
+        var ctx = Guid.Empty;
+        try
+        {
+            if (mute is bool m) v.SetMute(m, ref ctx);
+            if (level is float l) v.SetMasterVolumeLevelScalar(Math.Clamp(l, 0, 1), ref ctx);
+        }
+        finally { Marshal.ReleaseComObject(v); }
+    }
+
+    static IAudioEndpointVolume? MicVolume()
+    {
+        var en = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+        try
+        {
+            if (en.GetDefaultAudioEndpoint(1, 1, out var d) != 0 || d == null) return null;
+            var iid = typeof(IAudioEndpointVolume).GUID;
+            d.Activate(ref iid, 1 /*CLSCTX_INPROC_SERVER*/, IntPtr.Zero, out var p);
+            Marshal.ReleaseComObject(d);
+            if (p == IntPtr.Zero) return null;
+            var v = (IAudioEndpointVolume)Marshal.GetObjectForIUnknown(p);
+            Marshal.Release(p);
+            return v;
+        }
+        finally { Marshal.ReleaseComObject(en); }
+    }
+
+    [ComImport, Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IAudioEndpointVolume
+    {
+        [PreserveSig] int RegisterControlChangeNotify(IntPtr n);
+        [PreserveSig] int UnregisterControlChangeNotify(IntPtr n);
+        [PreserveSig] int GetChannelCount(out uint n);
+        [PreserveSig] int SetMasterVolumeLevel(float db, ref Guid ctx);
+        [PreserveSig] int SetMasterVolumeLevelScalar(float level, ref Guid ctx);
+        [PreserveSig] int GetMasterVolumeLevel(out float db);
+        [PreserveSig] int GetMasterVolumeLevelScalar(out float level);
+        [PreserveSig] int SetChannelVolumeLevel(uint ch, float db, ref Guid ctx);
+        [PreserveSig] int SetChannelVolumeLevelScalar(uint ch, float level, ref Guid ctx);
+        [PreserveSig] int GetChannelVolumeLevel(uint ch, out float db);
+        [PreserveSig] int GetChannelVolumeLevelScalar(uint ch, out float level);
+        [PreserveSig] int SetMute([MarshalAs(UnmanagedType.Bool)] bool mute, ref Guid ctx);
+        [PreserveSig] int GetMute([MarshalAs(UnmanagedType.Bool)] out bool mute);
     }
 
     [StructLayout(LayoutKind.Sequential)] struct PropertyKey { public Guid fmtid; public int pid; }

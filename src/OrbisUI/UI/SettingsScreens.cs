@@ -166,17 +166,120 @@ public static class SettingsScreens
     {
         new ListItem { Glyph = "\uE7B3", Label = "Reduce Motion", Check = () => S.ReducedMotion, Activate = () => { S.ReducedMotion = !S.ReducedMotion; Save(); Shell.Window.Background_.SetRunning(!S.ReducedMotion); } },
         new ListItem { Glyph = "\uE706", Label = "High Contrast Text", Sub = () => "Applies to newly opened screens", Check = () => S.HighContrast, Activate = () => { S.HighContrast = !S.HighContrast; Save(); } },
-        new ListItem { Glyph = "\uE776", Label = "Windows Accessibility Settings", Sub = () => "Text size, narrator, magnifier", Activate = () => WinSettings("ms-settings:easeofaccess") },
+        new ListItem { Glyph = "\uE7EF", Label = "Screen Reader", Sub = () => "Windows Narrator reads the screen aloud", Check = () => Running("Narrator"), Activate = () => ToggleTool("Narrator", "narrator.exe") },
+        new ListItem { Glyph = "\uE71E", Label = "Zoom", Sub = () => "Windows Magnifier", Check = () => Running("Magnify"), Activate = () => ToggleTool("Magnify", "magnify.exe") },
+        new ListItem { Glyph = "\uE765", Label = "Sticky Keys Shortcut", Sub = () => "Pressing Shift five times turns on Sticky Keys", Check = () => Access.StickyShortcut, Activate = () => Access.StickyShortcut = !Access.StickyShortcut },
     });
+
+    static bool Running(string proc) => System.Diagnostics.Process.GetProcessesByName(proc).Length > 0;
+
+    static void ToggleTool(string proc, string exe)
+    {
+        try
+        {
+            var ps = System.Diagnostics.Process.GetProcessesByName(proc);
+            if (ps.Length == 0) Native.OpenShell(Path.Combine(Environment.SystemDirectory, exe));
+            else foreach (var p in ps) using (p) p.Kill();
+        }
+        catch (Exception ex) { Shell.Message("Accessibility", ex.Message); }
+    }
 
     static Screen DevicesScreen() => new ListScreen("Network and Devices", new[]
     {
         new ListItem { Glyph = "\uE701", Label = "Wi-Fi", Sub = () => "Choose a network", Activate = () => Shell.Push(WifiScreen()) },
         new ListItem { Glyph = "\uE767", Label = "Audio Output", Sub = () => "Speakers, headphones, TV", Activate = () => Shell.Push(AudioScreen()) },
-        new ListItem { Glyph = "\uE702", Label = "Bluetooth Devices", Sub = () => "Pair controllers and headsets in Windows Settings", Activate = () => WinSettings("ms-settings:bluetooth") },
-        new ListItem { Glyph = "\uE720", Label = "Audio Input and Advanced Sound", Activate = () => WinSettings("ms-settings:sound") },
-        new ListItem { Glyph = "\uE83F", Label = "Power and Battery", Activate = () => WinSettings("ms-settings:powersleep") },
+        new ListItem { Glyph = "\uE702", Label = "Bluetooth Devices", Sub = () => "Pair, connect and remove controllers and headsets", Activate = () => Shell.Push(BluetoothScreen()) },
+        new ListItem { Glyph = "\uE720", Label = "Audio Input", Sub = () => "Microphone, its level and mute", Activate = () => Shell.Push(MicScreen()) },
+        new ListItem { Glyph = "\uE83F", Label = "Power Saving", Sub = () => "Power mode, screen off and sleep timers", Activate = () => Shell.Push(PowerScreen()) },
     });
+
+    static T Wait<T>(Func<Task<T>> f) => Task.Run(f).GetAwaiter().GetResult();
+
+    internal static Screen BluetoothScreen(bool scanned = false)
+    {
+        List<Bluetooth.Device> devs;
+        bool? on;
+        try { on = Wait(Bluetooth.IsOnAsync); devs = on == true ? Wait(() => Bluetooth.DevicesAsync(false)) : new(); }
+        catch (Exception ex) { return new ListScreen("Bluetooth Devices", new[] { new ListItem { Glyph = "\uE783", Label = "Bluetooth isn't available", Sub = () => ex.Message } }); }
+        if (on == null) return new ListScreen("Bluetooth Devices", new[] { new ListItem { Glyph = "\uE783", Label = "This device has no Bluetooth radio" } });
+        var found = scanned ? _btFound : null;
+        void Reopen(bool sc) { if (Shell.Top is ListScreen { Tag: "bt" } cur) { var i = cur.Selected; Shell.Pop(); var n = (ListScreen)BluetoothScreen(sc); n.Select(i); Shell.Push(n); } }
+        void Scan() => Task.Run(async () =>
+        {
+            try { _btFound = await Bluetooth.DevicesAsync(true); } catch (Exception ex) { Log.Warn("Bluetooth scan: " + ex.Message); _btFound = new(); }
+            Shell.Window.Dispatcher.Invoke(() => Reopen(true));
+        });
+        void Run(string what, Func<Task<string>> f) => Task.Run(async () =>
+        {
+            string r;
+            try { r = await f(); } catch (Exception ex) { r = ex.Message; }
+            Shell.Window.Dispatcher.Invoke(() => { Shell.Toast("Bluetooth", what + ": " + r, "\uE702"); Reopen(scanned); });
+        });
+        var items = new List<ListItem>
+        {
+            new() { Glyph = "\uE702", Label = "Bluetooth", Check = () => on == true, Activate = () => Run("Bluetooth", async () => await Bluetooth.SetOnAsync(on != true) ? (on == true ? "Off" : "On") : "Not allowed") },
+        };
+        if (on == true)
+        {
+            var all = devs.Concat((found ?? new()).Where(f => !f.Paired && devs.All(d => d.Id != f.Id))).ToList();
+            foreach (var d in all)
+                items.Add(new ListItem
+                {
+                    Glyph = d.Paired ? "\uE7FC" : "\uE702", Label = d.Name,
+                    Sub = () => d.Connected ? "Connected" : d.Paired ? "Paired, not connected" : "Not paired",
+                    Activate = () =>
+                    {
+                        if (!d.Paired) { Shell.Toast("Bluetooth", "Pairing with " + d.Name, "\uE702"); Run(d.Name, () => Bluetooth.PairAsync(d.Id)); return; }
+                        Shell.Push(new ListScreen(d.Name, new[]
+                        {
+                            new ListItem { Glyph = "\uE703", Label = "Connect", Activate = () => { Shell.Pop(); Run(d.Name, async () => await Bluetooth.ConnectAsync(d) ? "Connected" : "Couldn't connect. Turn the device on and try again."); } },
+                            new ListItem { Glyph = "\uE74D", Label = "Forget Device", Activate = () => { Shell.Pop(); Shell.Confirm("Bluetooth", $"Remove {d.Name}? It has to be paired again to use it.", () => Run(d.Name, () => Bluetooth.ForgetAsync(d.Id)), "Remove", "Cancel"); } },
+                        }, dialog: true));
+                    },
+                });
+            items.Add(new ListItem { Glyph = "\uE72C", Label = scanned ? "Search Again" : "Searching for Devices", Activate = () => { Shell.Toast("Bluetooth", "Searching. Put the device in pairing mode.", "\uE702"); Scan(); } });
+            if (!scanned) Scan();
+        }
+        return new ListScreen("Bluetooth Devices", items, subtitle: on == true ? "To pair a controller, hold Share and PS until its light flashes, then choose it here." : null) { Tag = "bt" };
+    }
+    static List<Bluetooth.Device>? _btFound;
+
+    static Screen MicScreen()
+    {
+        List<Devices.AudioDevice> mics;
+        try { mics = Devices.AudioOutputs(1); }
+        catch (Exception ex) { return new ListScreen("Audio Input", new[] { new ListItem { Glyph = "\uE783", Label = "Microphones couldn't be read", Sub = () => ex.Message } }); }
+        if (mics.Count == 0) return new ListScreen("Audio Input", new[] { new ListItem { Glyph = "\uE720", Label = "No microphone is connected" } });
+        var items = new List<ListItem>
+        {
+            new() { Glyph = "\uE720", Label = "Mute Microphone", Check = () => Devices.MicState()?.Muted == true, Activate = () => Devices.SetMic(mute: Devices.MicState()?.Muted != true) },
+            new() { Glyph = "\uE767", Label = "Microphone Level", Value = () => $"{(Devices.MicState()?.Level ?? 0) * 100:0}%",
+                Adjust = d => Devices.SetMic(level: (float)Math.Round((Devices.MicState()?.Level ?? 0) + d * 0.1, 1)) },
+            new() { Label = "Input Device", IsHeader = true },
+        };
+        items.AddRange(mics.Select(m => new ListItem
+        {
+            Glyph = "\uE720", Label = m.Name, Check = () => m.IsDefault,
+            Activate = () => { try { Devices.SetDefaultOutput(m.Id); Shell.Pop(); Shell.Push(MicScreen()); } catch (Exception ex) { Shell.Message("Audio Input", ex.Message); } },
+        }));
+        return new ListScreen("Audio Input", items);
+    }
+
+    static Screen PowerScreen() => new ListScreen("Power Saving", new[]
+    {
+        new ListItem { Glyph = "\uE945", Label = "Power Mode", Value = () => Power.Modes[Power.Mode()].Name, Adjust = d => Power.SetMode(Power.Mode() + d) },
+        new ListItem { Glyph = "\uE7F4", Label = "Turn Off Screen After", Value = () => Power.MinutesText(Power.Timeout(false)), Adjust = d => Power.SetTimeout(false, Step(Power.Timeout(false), d)) },
+        new ListItem { Glyph = "\uE708", Label = "Sleep After", Value = () => Power.MinutesText(Power.Timeout(true)), Adjust = d => Power.SetTimeout(true, Step(Power.Timeout(true), d)) },
+    });
+
+    /// <summary>Next value in the console-like list of timer lengths (Never is last).</summary>
+    static int Step(int cur, int d)
+    {
+        var i = Array.IndexOf(Power.Minutes, cur);
+        if (i < 0) i = Array.FindIndex(Power.Minutes, m => m >= cur && m != 0);
+        if (i < 0) i = Power.Minutes.Length - 1;
+        return Power.Minutes[Math.Clamp(i + d, 0, Power.Minutes.Length - 1)];
+    }
 
     /// <summary>Shows the cached list at once, then scans in the background and refreshes; <paramref name="scanned"/> stops the loop.</summary>
     internal static Screen WifiScreen(bool scanned = false)
@@ -288,12 +391,6 @@ public static class SettingsScreens
         Shell.Push(dlg);
         Sound.Play(Sfx.DialogShow);
         timer.Start();
-    }
-
-    static void WinSettings(string uri)
-    {
-        try { Native.OpenShell(uri); }
-        catch (Exception ex) { Shell.Message("Settings", "Windows Settings couldn't be opened: " + ex.Message); }
     }
 
     static Screen AccountsScreen() => new ListScreen("Accounts and Services", new[]
