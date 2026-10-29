@@ -57,16 +57,16 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 **System**
 - Settings styled after the PS4's, all native (no Windows Settings pages): Wi-Fi scan and connect, Bluetooth pairing, audio output and input, Power, Accessibility, Display (resolution, refresh rate, brightness, 15 s revert timer)
 - Portable folder, DPAPI-encrypted keys, low idle CPU, GitHub auto-updater with SHA-256 checks
+- SONYRESOURCES backup restore: a fresh OrbisUI finds a `SONYRESOURCES` folder inside it, beside it, or at `X:\SONYRESOURCES` / `X:\Sony\SONYRESOURCES`, brings in its emulators, firmware and media (existing files win), then installs the PS3 firmware silently
 
 ## Next update (TODO)
 Only open work is listed here; everything shipped is under Features.
 1. Bloodborne: install the base game and the 1.09 update (configs and patches are ready)
 2. PSP test ROM is a .7z, which PPSSPP can't open; it runs once extracted to .iso
-3. RPCS3 crashes on exit after a successful firmware install; Minecraft (PS3) boots with firmware 4.92 but gameplay isn't confirmed yet (first-run shader build)
+3. Minecraft (PS3) boots with firmware 4.92 but gameplay isn't confirmed yet, and PS3 shader compiling takes too long
 4. Persona 3 FES (PS2) boots but no picture was captured yet
 5. Gravity Rush (Vita): Vita3K runs it at 30 FPS but the screen stays black, even when launched directly
-6. SONYRESOURCES backup folder: drop it into a new OrbisUI folder to restore emulators, firmware and media (folder built, auto-import unfinished)
-7. Texture packs: no trusted source to download them from (#27)
+6. Texture packs: no trusted source to download them from (#27)
 
 ## Install (portable)
 

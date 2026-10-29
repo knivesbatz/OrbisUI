@@ -24,6 +24,7 @@ public static class Program
 
         Log.Info($"OrbisUI {Updater.CurrentText} starting from {AppPaths.Root}");
         Updater.CleanupOld();
+        SonyResources.Import(); // before sounds and icons load, so a dropped-in backup is used at once
         var settings = AppSettings.Load();
         Sound.Init(settings.UiVolume, settings.UiSounds);
         // The console sound pack is used whenever it can be found next to the app.
