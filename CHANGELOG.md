@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.8 (2026-10-29)
+Includes everything listed under 0.4.7, which was never released on its own.
+- Settings are all native and styled like the PS4's: Bluetooth (search, pair, connect, forget), Audio Input (mic, level, mute), Power Saving (mode, screen-off and sleep timers) and Accessibility join Wi-Fi, audio output and Display. No setting opens a Windows Settings page any more.
+- UI sounds and home music are always on (their toggles and Music Volume are gone). Only the PC battery level was removed; the controller battery still shows when it connects.
+- Lossless Scaling runs hidden: it starts minimised, Auto Lossless Scaling's restart stays minimised and the hotkey is never pressed twice.
+- The launch splash is just the game's blurred background and a spinner, and the game gets focus on its own after launch.
+- Emulated and added PC games launch through their Steam shortcut (with icon), so the Steam overlay hooks in. Vita games launch directly, since Vita3K fails to start from a shortcut.
+- Steam-shortcut art is never blank: whatever SteamGridDB lacks (portrait, wide capsule, hero, logo) is made from the game's cover, background and title.
+- Library: no platform filters or grouping, a small platform badge on each tile.
+- Trophies: Down on the home Trophies card opens the game's full trophy list (icon, name, description, grade, earned date or Locked).
+- Menu tour: Trophies preview in the function row, two-pane Friends, a "Please wait" page with the PS shapes, a Downloads category in Notifications and a "Who is using this controller?" login.
+- SONYRESOURCES restore: a fresh OrbisUI finds a SONYRESOURCES backup inside its folder, beside it or at X:\SONYRESOURCES or X:\Sony\SONYRESOURCES, brings in the emulators, firmware and media without overwriting anything, and installs the PS3 firmware silently (RPCS3's install prompt no longer hangs it).
+- Vita3K profile: no update check or prompt, info log level, Vulkan validation off.
 ## 0.4.7 (unreleased)
 - Wi-Fi: the "Windows Wi-Fi Settings" entry is gone; everything is done in OrbisUI.
 - When ReShade is running in a game, OrbisUI shows an "HDR On" notice over the game. The launch picture now stays over the game until ReShade has finished loading, so ReShade's own startup banner is never seen.

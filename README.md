@@ -18,13 +18,14 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 | ![Home with game art and background](docs/screenshots/home-bg.png) | ![Function row](docs/screenshots/fn.png) |
 | ![Library](docs/screenshots/library.png) | ![Game options](docs/screenshots/options.png) |
 
-**Latest release:** [v0.4.5](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
+**Latest release:** [v0.4.8](https://github.com/knivesbatz/OrbisUI/releases/latest) · full feature status in [FEATURES.md](FEATURES.md) · roadmap in [TODO.md](TODO.md) and the [issues](https://github.com/knivesbatz/OrbisUI/issues).
 
 ## Features (implemented)
 
 **Console experience**
 - PS4 home: status bar (PS Plus, notifications, messages, friends, your Steam avatar and name, trophies, settings, power, clock), square tiles with the enlarged selection and Start bar; Up drops the row to the bottom and opens the function row like the console
-- Trophies and Friends cards under the selected game: progress, grade counts, most recent trophy and friends' progress (Steam achievements or RetroAchievements); press Down for the game's full trophy list (icon, name, description, grade, date or Locked)
+- Trophies and Friends cards under the selected game: progress, grade counts, most recent trophy and friends' progress (Steam achievements or RetroAchievements)
+; press Down for the game's full trophy list (icon, name, description, grade, date or Locked)
 - PlayStation Store and What's New tiles; What's New is an activity feed of you and your Steam friends (friends need a Steam Web API key)
 - Live video background, boot video that fades into home (PS skips it) and home music, from your own media in `Data\Media`
 - PS4 sound pack and icon pack (your files; repaired WAV headers), colour themes like the console's (Settings > Themes, royal blue by default, also tints the boot video), everything square-cornered
