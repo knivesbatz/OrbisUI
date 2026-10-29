@@ -291,11 +291,15 @@ public class CoreTests
     {
         var dir = Path.Combine(AppPaths.Root, "grid-" + Guid.NewGuid().ToString("N"));
         var art = Path.Combine(AppPaths.Root, "cover.png");
-        File.WriteAllBytes(art, new byte[] { 1, 2, 3 });
+        var px = new int[64 * 64];
+        File.WriteAllBytes(art, ImageTools.Encode(System.Windows.Media.Imaging.BitmapSource.Create(64, 64, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null, px, 256), jpeg: false));
         var g = new Game { Id = "t:1", Title = "Test", Art = art };
         await MetadataService.SteamLibraryArtAsync(g, "Test", dir, 123u, CancellationToken.None);
-        Assert.True(File.Exists(Path.Combine(dir, "123p.png")));
-        Assert.True(File.Exists(Path.Combine(dir, "123.png")));
-        Assert.False(File.Exists(Path.Combine(dir, "123_hero.png")));
+        foreach (var (file, w, h) in new[] { ("123p.jpg", 600, 900), ("123.jpg", 920, 430), ("123_hero.jpg", 1920, 620) })
+        {
+            var b = ImageTools.Load(File.ReadAllBytes(Path.Combine(dir, file)));
+            Assert.Equal((w, h), (b.PixelWidth, b.PixelHeight));
+        }
+        Assert.True(new FileInfo(Path.Combine(dir, "123_logo.png")).Length > 100);
     }
 }

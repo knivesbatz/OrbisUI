@@ -36,66 +36,90 @@ public static class ImageTools
     /// <summary>Returns JPEG bytes of a TileSize square.</summary>
     public static byte[] MakeSquare(byte[] data) => Encode(Square(Load(data)), jpeg: true);
 
-    public static BitmapSource Square(BitmapSource src)
+    public static BitmapSource Square(BitmapSource src) => Fit(src, TileSize, TileSize);
+
+    /// <summary>Fits art into a W x H frame: near-same-shape art is cropped to cover, anything else sits over a blurred fill.</summary>
+    public static BitmapSource Fit(BitmapSource src, int W, int H)
     {
-        int n = TileSize;
         double w = src.PixelWidth, h = src.PixelHeight;
-        double aspect = w / h;
-        var outPx = new int[n * n];
+        double aspect = w / h / ((double)W / H);
+        var outPx = new int[W * H];
 
         if (aspect is > 0.9 and < 1.11)
         {
-            // Close enough to square: scale to cover, crop the few overhanging pixels.
-            double s = n / Math.Min(w, h);
+            // Close enough: scale to cover, crop the few overhanging pixels.
+            double s = Math.Max(W / w, H / h);
             var scaled = Scale(src, s, s);
             var p = Pixels(scaled);
             int sw = scaled.PixelWidth, sh = scaled.PixelHeight;
-            int ox = (sw - n) / 2, oy = (sh - n) / 2;
-            for (int y = 0; y < n; y++)
-                for (int x = 0; x < n; x++)
+            int ox = (sw - W) / 2, oy = (sh - H) / 2;
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
                 {
                     int sx2 = Math.Clamp(x + ox, 0, sw - 1), sy2 = Math.Clamp(y + oy, 0, sh - 1);
-                    outPx[y * n + x] = p[sy2 * sw + sx2] | unchecked((int)0xFF000000);
+                    outPx[y * W + x] = p[sy2 * sw + sx2] | unchecked((int)0xFF000000);
                 }
-            return Make(outPx, n);
+            return Make(outPx, W, H);
         }
 
-        // Blurred fill: shrink to a few pixels, bilinear back up.
+        // Blurred fill: shrink to a few pixels, bilinear back up (cover-scaled, centred).
         const int tiny = 12;
         double cover = tiny / Math.Min(w, h);
         var small = Scale(src, cover, cover);
         var sp = Pixels(small);
         int tw = small.PixelWidth, th = small.PixelHeight;
-        for (int y = 0; y < n; y++)
-            for (int x = 0; x < n; x++)
+        double k = Math.Min((double)tw / W, (double)th / H);
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
             {
-                double fx = (x + 0.5) * Math.Min(tw, th) / n - 0.5 + (tw - Math.Min(tw, th)) / 2.0;
-                double fy = (y + 0.5) * Math.Min(tw, th) / n - 0.5 + (th - Math.Min(tw, th)) / 2.0;
-                outPx[y * n + x] = Darken(Bilinear(sp, tw, th, fx, fy), 0.45);
+                double fx = (x + 0.5) * k - 0.5 + (tw - W * k) / 2.0;
+                double fy = (y + 0.5) * k - 0.5 + (th - H * k) / 2.0;
+                outPx[y * W + x] = Darken(Bilinear(sp, tw, th, fx, fy), 0.45);
             }
 
         // Fitted original on top, alpha blended.
-        double fit = n / Math.Max(w, h);
+        double fit = Math.Min(W / w, H / h);
         var fg = Scale(src, fit, fit);
         var fp = Pixels(fg);
         int fw = fg.PixelWidth, fh = fg.PixelHeight;
-        int x0 = (n - fw) / 2, y0 = (n - fh) / 2;
-        for (int y = 0; y < fh && y + y0 < n; y++)
-            for (int x = 0; x < fw && x + x0 < n; x++)
+        int x0 = (W - fw) / 2, y0 = (H - fh) / 2;
+        for (int y = 0; y < fh && y + y0 < H; y++)
+            for (int x = 0; x < fw && x + x0 < W; x++)
             {
-                int i = (y + y0) * n + x + x0;
+                int i = (y + y0) * W + x + x0;
                 outPx[i] = Blend(outPx[i], fp[y * fw + x]);
             }
-        return Make(outPx, n);
+        return Make(outPx, W, H);
     }
 
-    static BitmapSource Make(int[] px, int n)
+    static BitmapSource Make(int[] px, int w, int h)
     {
-        var b = BitmapSource.Create(n, n, 96, 96, PixelFormats.Bgra32, null, px, n * 4);
+        var b = BitmapSource.Create(w, h, 96, 96, PixelFormats.Bgra32, null, px, w * 4);
         b.Freeze();
         return b;
     }
 
+    /// <summary>Transparent PNG of the title in white with a soft shadow, for a Steam library logo. Rendered on its own STA thread
+    /// because WPF drawing needs one and this is called from background tasks.</summary>
+    public static byte[] TitleLogo(string title)
+    {
+        byte[] png = [];
+        var t = new Thread(() =>
+        {
+            var text = new FormattedText(title, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal), 96, Brushes.White, 1)
+            { MaxTextWidth = 1200, TextAlignment = TextAlignment.Center, MaxLineCount = 2, Trimming = TextTrimming.CharacterEllipsis };
+            var v = new DrawingVisual { Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 18, ShadowDepth = 3, Opacity = 0.8 } };
+            using (var dc = v.RenderOpen()) dc.DrawText(text, new Point(20, 20));
+            var rtb = new RenderTargetBitmap(1240, (int)Math.Ceiling(text.Height) + 40, 96, 96, PixelFormats.Pbgra32);
+            rtb.Render(v);
+            png = Encode(rtb, jpeg: false);
+        });
+        t.SetApartmentState(ApartmentState.STA);
+        t.Start();
+        t.Join();
+        return png;
+    }
     static int Bilinear(int[] p, int w, int h, double fx, double fy)
     {
         fx = Math.Clamp(fx, 0, w - 1); fy = Math.Clamp(fy, 0, h - 1);

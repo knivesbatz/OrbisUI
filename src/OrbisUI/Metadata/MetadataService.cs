@@ -352,11 +352,22 @@ public sealed partial class MetadataService
     {
         string? Icon() => Directory.Exists(gridDir) ? Directory.EnumerateFiles(gridDir, $"{appId}_icon.*").FirstOrDefault() : null;
         bool Has(string sfx) => Directory.Exists(gridDir) && Directory.EnumerateFiles(gridDir, $"{appId}{sfx}.*").Any(f => sfx != "" || Path.GetFileNameWithoutExtension(f) == appId.ToString());
-        // What SteamGridDB doesn't have, our own art fills: the square cover as both capsules, the background as the hero.
+        // What SteamGridDB doesn't have, our own art fills: the cover fitted to each capsule (and the hero when there's no
+        // background), the background as the hero, and the title as the logo.
         string? Done()
         {
-            foreach (var (src, sfx) in new[] { (g.Art, "p"), (g.Art, ""), (g.Background, "_hero") })
-                if (src != null && File.Exists(src) && !Has(sfx)) { Directory.CreateDirectory(gridDir); File.Copy(src, Path.Combine(gridDir, $"{appId}{sfx}{Path.GetExtension(src)}")); }
+            bool hasBg = g.Background != null && File.Exists(g.Background);
+            foreach (var (src, sfx, w, h) in new[] { (g.Art, "p", 600, 900), (g.Art, "", 920, 430), (hasBg ? g.Background : g.Art, "_hero", 1920, 620) })
+            {
+                if (src == null || !File.Exists(src) || Has(sfx)) continue;
+                Directory.CreateDirectory(gridDir);
+                var dest = Path.Combine(gridDir, $"{appId}{sfx}");
+                if (sfx == "_hero" && hasBg) { File.Copy(src, dest + Path.GetExtension(src)); continue; }
+                try { AtomicFile.WriteAllBytes(dest + ".jpg", ImageTools.Encode(ImageTools.Fit(ImageTools.Load(File.ReadAllBytes(src)), w, h), jpeg: true)); }
+                catch (Exception ex) { Log.Warn($"Steam art {sfx} for {title}: {ex.Message}"); }
+            }
+            if (!Has("_logo")) try { Directory.CreateDirectory(gridDir); AtomicFile.WriteAllBytes(Path.Combine(gridDir, $"{appId}_logo.png"), ImageTools.TitleLogo(title)); }
+                catch (Exception ex) { Log.Warn($"Steam logo for {title}: {ex.Message}"); }
             return Icon();
         }
         if (new[] { "p", "", "_hero", "_logo", "_icon" }.All(Has)) return Icon();
