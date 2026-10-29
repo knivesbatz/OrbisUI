@@ -34,38 +34,39 @@ It is a free, portable app (unzip and run, no installer) and a personal fan proj
 - PS4 PKG installer in the File Manager: games, updates and DLC extracted for shadPS4
 - Friends and Messages: your Steam friends, who's online and what they're playing; Cross opens a chat in Steam
 - Steam friends, chat, profile and store open in Big Picture; Steam starts in the background and goes back to minimized (with OrbisUI in front) when Big Picture closes
-- Notifications, power menu, setup wizard, on-screen keyboard
+- Notifications (with a Downloads category), power menu, setup wizard, on-screen keyboard
+- Function row with a Trophies preview, two-pane Friends screen, PS-shapes "Please wait" page and a "Who is using this controller?" login, as in the console's menu tour
 - DUALSHOCK 4 named as on the console; its battery level shows in the notification when it connects
+- OrbisUI takes focus back on its own when it starts and when a game or Steam page closes
 
 **Games**
 - Steam games and shortcuts, PC games from .exe, .lnk, .url or Microsoft Store apps, PS1/PS2/PS3/PS4/PSP/Vita games from one ROM folder, multi-disc grouping with a disc picker
 - Game versions: add other exes, shortcuts or Store apps in Game Settings, then pick one before launch
 - SteamGridDB artwork by default (retried after offline starts), controller cover picker, backgrounds after 5 s
-- Launch splash fades into the game's SteamGridDB background and fades out once the game has focus (cover and title when there's no background); Steam games launch with Steam kept minimized; PS button returns home over a running game
+- Library with a small platform badge on each tile (no platform filters or grouping)
+- Launch splash: the game's blurred SteamGridDB background with a spinner, held until the game has focus; Steam games launch with Steam kept minimized; PS button returns home over a running game
 - Uninstall or Delete in game Options with two confirmations (Steam, Store and registered uninstallers, otherwise the Recycle Bin); uninstalled games leave the library on their own
-- Emulated and added games are added to Steam with SteamGridDB art so they run with the Big Picture overlay
+- Emulated and added games are added to Steam (with icon and SteamGridDB art) and launch through that shortcut, so they run with the Steam overlay; Vita games launch directly
 - Emulators tuned for the Ally by default: Vulkan, no OSD, fast boot (BIOS and splash skipped) and 16:9/720p-class rendering for DuckStation, PCSX2, PPSSPP, RPCS3 and Vita3K, shadPS4 splash off; configs backed up first
 - ReShade in every emulator (Vulkan layer, your shaders); shadPS4 pipeline cache and Bloodborne patches (skip intro, 60 FPS++)
 - PlayStation Store metadata for PlayStation games; Trophies shows your RetroAchievements
 - PCSX2 widescreen and no-interlace patches and DuckStation's widescreen hack on by default
-- Per-game ReShade preset, Lossless Scaling auto-activation with a "PRO Mode Active" notification
+- Per-game ReShade preset, Lossless Scaling auto-activation (runs hidden, no LS window) with a "PRO Mode Active" notification
 - Controller Fixer: find and install PlayStation button prompt mods with backup and undo
 
 **System**
-- Wi-Fi scan with signal strength and connect/disconnect, and audio output picker, in the UI; Bluetooth opens Windows Settings
-- Display settings in the UI (resolution, refresh rate, brightness) with a 15 s revert timer
+- Settings styled after the PS4's, all native (no Windows Settings pages): Wi-Fi scan and connect, Bluetooth pairing, audio output and input, Power, Accessibility, Display (resolution, refresh rate, brightness, 15 s revert timer)
 - Portable folder, DPAPI-encrypted keys, low idle CPU, GitHub auto-updater with SHA-256 checks
 
 ## Next update (TODO)
 Only open work is listed here; everything shipped is under Features.
 1. Bloodborne: install the base game and the 1.09 update (configs and patches are ready)
-3. Bluetooth: pairing still opens Windows Settings instead of a native pairing screen (#19)
-4. PSP test ROM is a .7z, which PPSSPP can't open; it runs once extracted to .iso
-5. Internet Browser: check it with the Ally's physical buttons
-6. RPCS3 showed an error during a firmware install test; Minecraft (PS3) boots with firmware 4.92 but gameplay isn't confirmed yet (first-run shader build)
-7. Finish the emulator test pass: Persona 3 FES (PS2) boots but no picture was captured, Gravity Rush (Vita) boot not confirmed
-8. SONYRESOURCES backup folder: drop it into a new OrbisUI folder to restore emulators, firmware and media (folder built, auto-import unfinished)
-9. Texture packs: no trusted source to download them from (#27)
+2. PSP test ROM is a .7z, which PPSSPP can't open; it runs once extracted to .iso
+3. RPCS3 crashes on exit after a successful firmware install; Minecraft (PS3) boots with firmware 4.92 but gameplay isn't confirmed yet (first-run shader build)
+4. Persona 3 FES (PS2) boots but no picture was captured yet
+5. Gravity Rush (Vita): Vita3K runs it at 30 FPS but the screen stays black, even when launched directly
+6. SONYRESOURCES backup folder: drop it into a new OrbisUI folder to restore emulators, firmware and media (folder built, auto-import unfinished)
+7. Texture packs: no trusted source to download them from (#27)
 
 ## Install (portable)
 
