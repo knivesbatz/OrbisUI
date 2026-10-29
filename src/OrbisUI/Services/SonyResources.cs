@@ -21,6 +21,9 @@ public static class SonyResources
         var inside = Path.Combine(AppPaths.Root, FolderName);
         bool move = Directory.Exists(inside);
         if (!move && File.Exists(Marker)) return;
+        // Searching elsewhere is only for a fresh install (no settings yet, or an import still staged): an install already
+        // in use keeps its own emulators unless the backup is dropped inside it.
+        if (!move && File.Exists(Path.Combine(AppPaths.Config, "settings.json")) && !Directory.Exists(Path.Combine(AppPaths.Root, ".sonyimport"))) return;
         // Not inside: beside the OrbisUI folder, else X:\SONYRESOURCES or X:\Sony\SONYRESOURCES on any fixed drive.
         var src = move ? inside : new[] { Path.Combine(Path.GetDirectoryName(AppPaths.Root.TrimEnd('\\')) ?? "", FolderName) }
             .Concat(DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed && d.IsReady)
